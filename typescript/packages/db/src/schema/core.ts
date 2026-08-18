@@ -132,6 +132,13 @@ export const server = pgTable(
     detection: jsonb("detection").$type<Record<string, unknown>>(),
     health: healthEnum("health").notNull().default("unknown"),
     healthScore: integer("health_score"),
+    /**
+     * When health was last *verified*, not when it last changed. Without it,
+     * a server whose process died an hour ago still reads "healthy" and the
+     * dashboard is confidently wrong.
+     */
+    healthCheckedAt: timestamp("health_checked_at", { withTimezone: true }),
+    healthDetail: text("health_detail"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },

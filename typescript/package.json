@@ -20,6 +20,7 @@
     "db:down": "pnpm --filter @mcpfy/db db:down"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "embedded-postgres": "17.5.0-beta.15"
   }
 }

@@ -8,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
-  StatusDot,
 } from "@mcpfy/ui";
 import { requireViewer } from "@/lib/session";
+import { isStale, probeHealth, reconcileOrphanedDeployments } from "@/lib/health";
 import {
   getServer,
   getServerDeployments,
@@ -19,6 +19,7 @@ import {
 } from "@/lib/servers";
 import { STATUS_LABEL } from "@mcpfy/db";
 import { ConnectPanel } from "./connect-panel";
+import { HealthBadge } from "./health-badge";
 import { DeployButton } from "./deploy-button";
 import { DetectionPanel } from "./detection-panel";
 
@@ -46,11 +47,24 @@ export default async function ServerPage({
   // "does not exist" are the same 404 here — by design (§25).
   if (!server) notFound();
 
-  const [environments, deployments, tools] = await Promise.all([
+  // Resolve anything left mid-flight by a restart before rendering statuses,
+  // otherwise this page confidently shows a build that stopped existing.
+  await reconcileOrphanedDeployments(viewer.tenant);
+
+  // Verify liveness rather than trusting what deployment wrote. The probe is
+  // one ping, so it costs a few milliseconds and buys a status that is true.
+  if (isStale(server.healthCheckedAt)) {
+    await probeHealth(viewer.tenant, server.id).catch(() => {});
+  }
+
+  const [fresh, environments, deployments, tools] = await Promise.all([
+    getServer(viewer.tenant, server.id),
     getServerEnvironments(viewer.tenant, server.id),
     getServerDeployments(viewer.tenant, server.id),
     getServerTools(viewer.tenant, server.id),
   ]);
+
+  const current = fresh ?? server;
 
   const production = environments.find((e) => e.kind === "production");
   const endpoint = production?.endpointUrl ?? null;
@@ -72,7 +86,13 @@ export default async function ServerPage({
             {server.name}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <StatusDot status={server.health} />
+            <HealthBadge
+              serverId={server.id}
+              health={current.health}
+              detail={current.healthDetail}
+              checkedAt={current.healthCheckedAt?.toISOString() ?? null}
+              stale={isStale(current.healthCheckedAt)}
+            />
             <Badge mono>{server.transport.replace("_", " ")}</Badge>
             <Badge mono>{server.runtime}</Badge>
             <Badge mono>{server.region}</Badge>

@@ -16,6 +16,7 @@ import {
   type RepositoryInspection,
 } from "@mcpfy/deployment";
 import { startDeployment, cancelDeployment, DeployError } from "@/lib/deploy";
+import { probeHealth } from "@/lib/health";
 
 export interface CreateServerState {
   error?: string;
@@ -320,5 +321,24 @@ export async function cancelDeploymentAction(
   }
 
   revalidatePath(`/app/servers/${serverId}/deployments/${deploymentId}`);
+  return {};
+}
+
+
+/* --------------------------------------------------------------- health */
+
+export async function checkHealthAction(
+  _prev: { error?: string },
+  formData: FormData,
+): Promise<{ error?: string }> {
+  const viewer = await requireViewer();
+  const serverId = String(formData.get("serverId") ?? "");
+  if (!serverId) return { error: "No server was specified." };
+
+  // A liveness probe reads; a viewer may run one.
+  await probeHealth(viewer.tenant, serverId);
+  revalidatePath(`/app/servers/${serverId}`);
+  revalidatePath("/app/servers");
+  revalidatePath("/app");
   return {};
 }
