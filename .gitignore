@@ -38,3 +38,7 @@ next-env.d.ts
 # Local database
 *.pglite/
 .pgdata/
+
+# Embedded PostgreSQL dev cluster
+.pgdev/
+.pgpass-init

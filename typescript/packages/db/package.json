@@ -15,7 +15,9 @@
     "migrate": "tsx src/migrate.ts",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts"
+    "test": "node --import tsx --test src/*.test.ts",
+    "db:up": "node --import tsx scripts/dev-db.mts up",
+    "db:down": "node --import tsx scripts/dev-db.mts down"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -26,6 +28,7 @@
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "@types/node": "^22.10.2"
+    "@types/node": "^22.10.2",
+    "embedded-postgres": "17.5.0-beta.15"
   }
 }
