@@ -128,6 +128,18 @@ console.log(await session.callTool("hello"));
 
 ---
 
+## Platform
+
+The SDK above works standalone and always will. The hosted control plane —
+deploy, inspect, observe, evaluate — lives in `typescript/apps/web` and is
+being built in phases.
+
+  [`PLATFORM.md`](./PLATFORM.md) — architecture, how to run it locally, and an
+  honest list of what is and is not built yet.
+
+
+---
+
 ## Roadmap
 
   [`ROADMAP.md`](./ROADMAP.md)

@@ -1,0 +1,266 @@
+/*
+ * MCPfy design tokens.
+ *
+ * Values are lifted from the MCPfy Landing design canvas rather than invented,
+ * so the marketing site and the product share one palette instead of drifting
+ * into two. Dark is the default (§27: "a premium dark developer environment");
+ * light is a deliberate re-mapping of the same roles, not an inversion.
+ *
+ * Rule: components reference role tokens (--surface, --border, --text-muted),
+ * never raw scale values. Changing the palette should mean editing this file
+ * and nothing else.
+ */
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale, taken from the sizes actually used in the canvas. */
+  --text-2xs: 0.6875rem;   /* 11px — table meta, badges */
+  --text-xs: 0.75rem;      /* 12px — labels, captions */
+  --text-sm: 0.8125rem;    /* 13px — dense UI, code */
+  --text-base: 0.875rem;   /* 14px — body in product surfaces */
+  --text-md: 0.9375rem;    /* 15px — marketing body */
+  --text-lg: 1.0625rem;    /* 17px — card titles */
+  --text-xl: 1.375rem;     /* 22px — section subheads */
+  --text-2xl: 1.75rem;     /* 28px */
+  --text-3xl: 1.875rem;    /* 30px */
+  --text-4xl: 2.375rem;    /* 38px — section headlines */
+  --text-5xl: 3.75rem;     /* 60px — hero */
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Raw scale — dark. Do not reference these outside this file. */
+  --violet-100: #d3ccff;
+  --violet-200: #cfc7ff;
+  --violet-300: #b9aeff;
+  --violet-400: #a394ff;
+  --violet-500: #8f7bff;
+  --violet-800: #3a3470;
+  --violet-900: #16142a;
+  --violet-950: #0b0a14;
+
+  /* Surfaces, darkest to lightest. */
+  --bg-base: #08090b;
+  --bg-sunken: #060709;
+  --bg-raised: #0b0c0f;
+  --bg-surface: #0e1013;
+  --bg-panel: #14171c;
+  --bg-panel-strong: #16191e;
+  --bg-elevated: #1e232b;
+
+  --border-subtle: #1a1e24;
+  --border-default: #262c35;
+  --border-strong: #333a45;
+  --border-focus: var(--violet-500);
+
+  --text-high: #f4f6f8;
+  --text-default: #e8eaee;
+  --text-muted: #9aa1ad;
+  --text-subtle: #646b77;
+  --text-faint: #4a5260;
+  --text-on-accent: #0b0a14;
+
+  --accent: var(--violet-500);
+  --accent-hover: var(--violet-400);
+  --accent-text: var(--violet-300);
+  --accent-surface: var(--violet-900);
+  --accent-border: var(--violet-800);
+  --accent-ring: rgb(143 123 255 / 0.35);
+
+  --success: #2fd18a;
+  --success-surface: #0f1d17;
+  --success-border: #1f3d31;
+
+  --warning: #f5a524;
+  --warning-surface: #1d1608;
+  --warning-border: #3d3016;
+
+  --danger: #f3556c;
+  --danger-surface: #1e0f13;
+  --danger-border: #40202a;
+
+  --info: #4aa8ff;
+  --info-surface: #0b1620;
+  --info-border: #16324a;
+
+  --selection: rgb(143 123 255 / 0.3);
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-overlay: 0 16px 48px -12px rgb(0 0 0 / 0.7);
+}
+
+/*
+ * Light theme. The role names stay identical, so no component branches on
+ * theme; only these values move.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --bg-base: #ffffff;
+    --bg-sunken: #f4f6f8;
+    --bg-raised: #ffffff;
+    --bg-surface: #fbfcfd;
+    --bg-panel: #f4f6f8;
+    --bg-panel-strong: #eef1f5;
+    --bg-elevated: #ffffff;
+
+    --border-subtle: #e6e9ee;
+    --border-default: #d8dde5;
+    --border-strong: #c2c9d4;
+
+    --text-high: #0b0c0f;
+    --text-default: #16191e;
+    --text-muted: #4a5260;
+    --text-subtle: #646b77;
+    --text-faint: #9aa1ad;
+    --text-on-accent: #ffffff;
+
+    --accent: #6b52f5;
+    --accent-hover: #5a41e6;
+    --accent-text: #5a41e6;
+    --accent-surface: #f2effe;
+    --accent-border: #ddd5fb;
+
+    --success: #0f9d63;
+    --success-surface: #eafaf2;
+    --success-border: #bfe9d6;
+
+    --warning: #b26b00;
+    --warning-surface: #fdf5e6;
+    --warning-border: #f0dbb0;
+
+    --danger: #d1364d;
+    --danger-surface: #fdeef1;
+    --danger-border: #f5cbd3;
+
+    --info: #1a72d1;
+    --info-surface: #ecf4fd;
+    --info-border: #c6dcf6;
+
+    --shadow-panel: 0 1px 2px rgb(16 19 23 / 0.06), 0 8px 24px -12px rgb(16 19 23 / 0.12);
+    --shadow-overlay: 0 16px 48px -12px rgb(16 19 23 / 0.18);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-base: #ffffff;
+  --bg-sunken: #f4f6f8;
+  --bg-raised: #ffffff;
+  --bg-surface: #fbfcfd;
+  --bg-panel: #f4f6f8;
+  --bg-panel-strong: #eef1f5;
+  --bg-elevated: #ffffff;
+
+  --border-subtle: #e6e9ee;
+  --border-default: #d8dde5;
+  --border-strong: #c2c9d4;
+
+  --text-high: #0b0c0f;
+  --text-default: #16191e;
+  --text-muted: #4a5260;
+  --text-subtle: #646b77;
+  --text-faint: #9aa1ad;
+  --text-on-accent: #ffffff;
+
+  --accent: #6b52f5;
+  --accent-hover: #5a41e6;
+  --accent-text: #5a41e6;
+  --accent-surface: #f2effe;
+  --accent-border: #ddd5fb;
+
+  --success: #0f9d63;
+  --success-surface: #eafaf2;
+  --success-border: #bfe9d6;
+
+  --warning: #b26b00;
+  --warning-surface: #fdf5e6;
+  --warning-border: #f0dbb0;
+
+  --danger: #d1364d;
+  --danger-surface: #fdeef1;
+  --danger-border: #f5cbd3;
+
+  --info: #1a72d1;
+  --info-surface: #ecf4fd;
+  --info-border: #c6dcf6;
+
+  --shadow-panel: 0 1px 2px rgb(16 19 23 / 0.06), 0 8px 24px -12px rgb(16 19 23 / 0.12);
+  --shadow-overlay: 0 16px 48px -12px rgb(16 19 23 / 0.18);
+}
+
+/* Map role tokens into Tailwind's color namespace so utilities can use them. */
+@theme inline {
+  --color-base: var(--bg-base);
+  --color-sunken: var(--bg-sunken);
+  --color-raised: var(--bg-raised);
+  --color-surface: var(--bg-surface);
+  --color-panel: var(--bg-panel);
+  --color-panel-strong: var(--bg-panel-strong);
+  --color-elevated: var(--bg-elevated);
+
+  --color-line: var(--border-subtle);
+  --color-line-default: var(--border-default);
+  --color-line-strong: var(--border-strong);
+
+  --color-hi: var(--text-high);
+  --color-fg: var(--text-default);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-faint: var(--text-faint);
+  --color-on-accent: var(--text-on-accent);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-accent-surface: var(--accent-surface);
+  --color-accent-border: var(--accent-border);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-danger-border: var(--danger-border);
+  --color-info: var(--info);
+  --color-info-surface: var(--info-surface);
+  --color-info-border: var(--info-border);
+}
+
+::selection {
+  background: var(--selection);
+}
+
+/* §29 / §47 — motion is opt-out at the platform level, not per component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* §47 — a visible focus ring on keyboard focus only, never suppressed. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}

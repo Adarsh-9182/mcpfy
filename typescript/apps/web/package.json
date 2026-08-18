@@ -1,0 +1,35 @@
+{
+  "name": "@mcpfy/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node --import tsx ../../packages/db/src/migrate.ts",
+    "db:generate": "pnpm --filter @mcpfy/db generate"
+  },
+  "dependencies": {
+    "@mcpfy/db": "workspace:*",
+    "@mcpfy/ui": "workspace:*",
+    "better-auth": "^1.7.0",
+    "drizzle-orm": "^0.45.2",
+    "next": "^16.3.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.4.3",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2"
+  }
+}

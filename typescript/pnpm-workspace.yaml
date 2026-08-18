@@ -1,7 +1,10 @@
 packages:
   - "packages/*"
   - "examples/*"
+  - "apps/*"
 
 onlyBuiltDependencies:
   - esbuild
   - "@modelcontextprotocol/ext-apps"
+  - "@tailwindcss/oxide"
+  - sharp

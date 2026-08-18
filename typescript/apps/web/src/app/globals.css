@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "@mcpfy/ui/styles.css";
+
+/* Tailwind v4 scans sources explicitly; the design system lives outside this app. */
+@source "../../../../packages/ui/src";
+
+/*
+ * next/font self-hosts IBM Plex and exposes it as a CSS variable, which
+ * removes the render-blocking Google Fonts request the design canvas used.
+ * The token names stay the same so components need no change.
+ */
+@theme inline {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-default);
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Skip link — visible only once focused (§47). */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--text-high);
+}
+
+@keyframes mcpfy-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+
+@keyframes mcpfy-flow {
+  0% { transform: translateY(-8px); opacity: 0; }
+  20%, 80% { opacity: 1; }
+  100% { transform: translateY(56px); opacity: 0; }
+}
+
+@keyframes mcpfy-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}

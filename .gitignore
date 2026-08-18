@@ -30,3 +30,11 @@ venv/
 *.tgz
 typescript/packages/*/package-lock.json
 playground/
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Local database
+*.pglite/
+.pgdata/
