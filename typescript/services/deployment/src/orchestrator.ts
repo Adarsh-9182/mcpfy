@@ -92,11 +92,11 @@ export class Orchestrator {
         signal,
       });
 
-      await this.store.replaceTools(
-        spec.serverId,
-        spec.organizationId,
-        health.tools,
-      );
+      await this.store.replaceCapabilities(spec.serverId, spec.organizationId, {
+        tools: health.tools,
+        resources: health.resources,
+        prompts: health.prompts,
+      });
       await this.store.promoteEnvironment(
         spec.environmentId,
         spec.deploymentId,

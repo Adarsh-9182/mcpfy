@@ -1,31 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { Badge, Button, cn } from "@mcpfy/ui";
+import {
+  Badge,
+  Button,
+  SchemaForm,
+  cn,
+  defaultsForSchema,
+  missingRequired,
+  toArguments,
+  type JsonSchema,
+} from "@mcpfy/ui";
 
 /**
  * §7 — the interactive Inspector demo.
  *
- * The form is generated from real JSON Schema by `fieldsFor` below — the same
- * transformation the product Inspector performs (§13), not a hand-drawn
- * imitation of one. What is simulated is only the transport: instead of a
+ * The form is rendered by `SchemaForm` from `@mcpfy/ui` — the exact component
+ * the product Inspector uses, given the same JSON Schema. Not an imitation of
+ * it: the same code. What is simulated is only the transport: instead of a
  * live MCP server there is a local resolver, and the panel says so. Every
  * request/response pair shown is genuinely produced by the code on this page.
  */
-
-interface JsonSchema {
-  type: "object";
-  properties: Record<
-    string,
-    {
-      type: "string" | "number" | "boolean";
-      description?: string;
-      enum?: string[];
-      default?: string | number | boolean;
-    }
-  >;
-  required?: string[];
-}
 
 interface DemoTool {
   name: string;
@@ -147,25 +142,6 @@ const TOOLS: DemoTool[] = [
   },
 ];
 
-/** JSON Schema → form fields. Shared shape with the product Inspector. */
-function fieldsFor(schema: JsonSchema) {
-  return Object.entries(schema.properties).map(([name, prop]) => ({
-    name,
-    ...prop,
-    required: schema.required?.includes(name) ?? false,
-  }));
-}
-
-function defaultsFor(schema: JsonSchema): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [name, prop] of Object.entries(schema.properties)) {
-    if (prop.default !== undefined) out[name] = prop.default;
-    else if (prop.type === "boolean") out[name] = false;
-    else out[name] = "";
-  }
-  return out;
-}
-
 interface HistoryEntry {
   id: number;
   tool: string;
@@ -179,7 +155,7 @@ export function InspectorDemo() {
   const [toolName, setToolName] = React.useState(TOOLS[0]!.name);
   const tool = TOOLS.find((t) => t.name === toolName)!;
   const [args, setArgs] = React.useState<Record<string, unknown>>(() =>
-    defaultsFor(TOOLS[0]!.inputSchema),
+    defaultsForSchema(TOOLS[0]!.inputSchema),
   );
   const [response, setResponse] = React.useState<{
     ok: boolean;
@@ -195,16 +171,16 @@ export function InspectorDemo() {
   function selectTool(name: string) {
     const next = TOOLS.find((t) => t.name === name)!;
     setToolName(name);
-    setArgs(defaultsFor(next.inputSchema));
+    setArgs(defaultsForSchema(next.inputSchema));
     setResponse(null);
   }
 
-  const missing = fieldsFor(tool.inputSchema)
-    .filter((f) => f.required && !String(args[f.name] ?? "").trim())
-    .map((f) => f.name);
+  const missing = missingRequired(tool.inputSchema, args);
 
   function execute(overrideArgs?: Record<string, unknown>) {
-    const payload = overrideArgs ?? args;
+    // Coerce the form's strings into the types the schema declares, exactly
+    // as the product Inspector does before it puts them on the wire.
+    const payload = overrideArgs ?? toArguments(tool.inputSchema, args).args;
     setRunning(true);
     // A short delay so the pending state is legible; nothing is over the wire.
     setTimeout(() => {
@@ -342,71 +318,13 @@ export function InspectorDemo() {
           <p className="mt-4 text-2xs font-medium uppercase tracking-wider text-faint">
             Arguments
           </p>
-          <div className="mt-2 flex flex-col gap-2.5">
-            {fieldsFor(tool.inputSchema).map((field) => {
-              const id = `demo-${tool.name}-${field.name}`;
-              return (
-                <div key={field.name} className="flex flex-col gap-1">
-                  <label
-                    htmlFor={id}
-                    className="flex items-baseline gap-1.5 font-mono text-2xs text-muted"
-                  >
-                    {field.name}
-                    <span className="text-faint">{field.type}</span>
-                    {field.required ? (
-                      <span className="text-danger" aria-label="required">
-                        *
-                      </span>
-                    ) : null}
-                  </label>
-                  {field.type === "boolean" ? (
-                    <input
-                      id={id}
-                      type="checkbox"
-                      checked={Boolean(args[field.name])}
-                      onChange={(e) =>
-                        setArgs((a) => ({ ...a, [field.name]: e.target.checked }))
-                      }
-                      className="size-4 accent-[var(--accent)]"
-                    />
-                  ) : field.enum ? (
-                    <select
-                      id={id}
-                      value={String(args[field.name] ?? "")}
-                      onChange={(e) =>
-                        setArgs((a) => ({ ...a, [field.name]: e.target.value }))
-                      }
-                      className="h-8 rounded-[var(--radius-sm)] border border-line-default bg-raised px-2 font-mono text-sm text-fg focus:border-accent focus:outline-none"
-                    >
-                      {field.enum.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      id={id}
-                      type={field.type === "number" ? "number" : "text"}
-                      value={String(args[field.name] ?? "")}
-                      placeholder={field.description}
-                      onChange={(e) =>
-                        setArgs((a) => ({
-                          ...a,
-                          [field.name]:
-                            field.type === "number"
-                              ? e.target.value === ""
-                                ? ""
-                                : Number(e.target.value)
-                              : e.target.value,
-                        }))
-                      }
-                      className="h-8 rounded-[var(--radius-sm)] border border-line-default bg-raised px-2 font-mono text-sm text-fg placeholder:text-faint focus:border-accent focus:outline-none"
-                    />
-                  )}
-                </div>
-              );
-            })}
+          <div className="mt-2">
+            <SchemaForm
+              idPrefix={`demo-${tool.name}`}
+              schema={tool.inputSchema}
+              values={args}
+              onChange={setArgs}
+            />
           </div>
 
           <div className="mt-4 flex items-center gap-2">

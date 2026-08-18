@@ -23,7 +23,8 @@
     "zod": "^4.4.3",
     "server-only": "^0.0.1",
     "@mcpfy/deployment": "workspace:*",
-    "@mcpfy/detection": "workspace:*"
+    "@mcpfy/detection": "workspace:*",
+    "@mcpfy/inspector": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

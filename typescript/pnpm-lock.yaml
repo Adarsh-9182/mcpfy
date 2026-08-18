@@ -23,6 +23,9 @@ importers:
       '@mcpfy/detection':
         specifier: workspace:*
         version: link:../../services/detection
+      '@mcpfy/inspector':
+        specifier: workspace:*
+        version: link:../../services/inspector
       '@mcpfy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -233,6 +236,9 @@ importers:
       '@mcpfy/detection':
         specifier: workspace:*
         version: link:../detection
+      '@mcpfy/inspector':
+        specifier: workspace:*
+        version: link:../inspector
       mcpfy-sdk:
         specifier: workspace:*
         version: link:../../packages/mcpfy
@@ -248,6 +254,22 @@ importers:
         version: 5.9.3
 
   services/detection:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  services/inspector:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.29.0
+        version: 1.29.0(zod@4.4.3)
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -3462,6 +3484,28 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
+    dependencies:
+      '@hono/node-server': 1.19.15(hono@4.12.32)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.0
+      express: 5.2.1
+      express-rate-limit: 8.6.0(express@5.2.1)
+      hono: 4.12.32
+      jose: 6.2.4
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.4.3
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
+    transitivePeerDependencies:
+      - supports-color
+
   '@next/env@16.3.1': {}
 
   '@next/swc-darwin-arm64@16.3.1':
@@ -4811,6 +4855,10 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
+
+  zod-to-json-schema@3.25.2(zod@4.4.3):
+    dependencies:
+      zod: 4.4.3
 
   zod@3.25.76: {}
 

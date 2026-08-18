@@ -1,21 +1,34 @@
-import { MCPClient } from "mcpfy-sdk/client";
+import { listCapabilities } from "@mcpfy/inspector";
 import { sleep } from "./ports";
-import { DeploymentError, type DiscoveredTool, type LogSink } from "./types";
+import {
+  DeploymentError,
+  type DiscoveredPrompt,
+  type DiscoveredResource,
+  type DiscoveredTool,
+  type LogSink,
+} from "./types";
 
 /**
  * §11 HEALTH_CHECK and §44 — a deployment is not live because a port is open.
  *
- * The check is a real MCP handshake through mcpfy-sdk's own client: connect,
- * initialize, and list tools. That is exactly what Claude or Cursor will do
- * moments later, so anything that fails here would have failed for a user.
- * Discovery comes free with it, which is what fills the tool registry (§14)
- * instead of asking developers to type their own schemas in.
+ * The check is a real MCP handshake followed by a capability sweep, run
+ * through the same client the Inspector uses. That matters twice over: it is
+ * exactly what Claude or Cursor will do moments later, and it means the health
+ * check and the Inspector can never disagree about whether a server works.
+ *
+ * Discovery falls out of the sweep, which is what fills the tool, resource and
+ * prompt registries (§13, §14) instead of asking developers to retype their
+ * own schemas.
  */
 
 export interface HealthResult {
   ok: boolean;
   tools: DiscoveredTool[];
+  resources: DiscoveredResource[];
+  prompts: DiscoveredPrompt[];
   latencyMs: number;
+  serverInfo?: { name?: string; version?: string };
+  protocolVersion?: string;
   checks: { name: string; ok: boolean; detail?: string }[];
 }
 
@@ -34,70 +47,101 @@ export async function checkHealth(
     headers?: Record<string, string>;
   } = {},
 ): Promise<HealthResult> {
-  let lastError: unknown;
+  let lastError = "";
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     signal?.throwIfAborted();
-    const startedAt = Date.now();
 
-    const client = new MCPClient({
-      mcpServers: { target: { url: endpointUrl, headers } },
+    log({
+      stream: "system",
+      message: `Health check ${attempt}/${attempts}: MCP handshake against ${endpointUrl}`,
     });
 
-    try {
+    const { result, info } = await listCapabilities({ endpointUrl, headers });
+
+    if (info.ok) {
       log({
         stream: "system",
-        message: `Health check ${attempt}/${attempts}: MCP handshake against ${endpointUrl}`,
+        message:
+          `Handshake succeeded in ${info.operationMs ?? info.totalMs}ms ` +
+          `(${info.protocolVersion ?? "unknown protocol"}); ` +
+          `${result.tools.length} tool${result.tools.length === 1 ? "" : "s"}, ` +
+          `${result.resources.length} resource${result.resources.length === 1 ? "" : "s"}, ` +
+          `${result.prompts.length} prompt${result.prompts.length === 1 ? "" : "s"}.`,
       });
 
-      const session = await client.createSession("target");
-      const tools = await session.listTools();
-      const latencyMs = Date.now() - startedAt;
-
-      log({
-        stream: "system",
-        message: `Handshake succeeded in ${latencyMs}ms; ${tools.length} tool${tools.length === 1 ? "" : "s"} discovered.`,
-      });
-
-      await client.closeAllSessions().catch(() => {});
+      if (result.unsupported.length > 0) {
+        // Not a failure: plenty of servers expose tools and nothing else.
+        log({
+          stream: "system",
+          message: `Not implemented by this server: ${result.unsupported.join(", ")}.`,
+        });
+      }
 
       return {
         ok: true,
-        latencyMs,
-        tools: tools.map((tool) => ({
-          name: tool.name,
-          title: tool.title ?? null,
-          description: tool.description ?? null,
-          inputSchema: (tool.inputSchema as Record<string, unknown>) ?? null,
-          outputSchema: (tool.outputSchema as Record<string, unknown>) ?? null,
-        })),
+        latencyMs: info.operationMs ?? info.totalMs,
+        serverInfo: info.serverInfo,
+        protocolVersion: info.protocolVersion,
+        tools: result.tools.map(toTool),
+        resources: result.resources.map(toResource),
+        prompts: result.prompts.map(toPrompt),
         checks: [
           { name: "Transport", ok: true },
-          { name: "Protocol handshake", ok: true },
-          { name: "Tool discovery", ok: true, detail: `${tools.length} tools` },
+          { name: "Protocol handshake", ok: true, detail: info.protocolVersion },
+          { name: "Tool discovery", ok: true, detail: `${result.tools.length} tools` },
         ],
       };
-    } catch (error) {
-      lastError = error;
-      await client.closeAllSessions().catch(() => {});
+    }
 
-      const detail = error instanceof Error ? error.message : String(error);
-      log({
-        stream: "system",
-        message: `Health check ${attempt}/${attempts} failed: ${detail}`,
-      });
+    lastError = info.error?.message ?? "unknown error";
+    log({
+      stream: "system",
+      message: `Health check ${attempt}/${attempts} failed: ${lastError}`,
+    });
 
-      if (attempt < attempts) {
-        // Exponential backoff: a server that is still importing modules needs
-        // longer than one that is already up.
-        await sleep(initialDelayMs * 2 ** (attempt - 1), signal);
-      }
+    if (attempt < attempts) {
+      // Exponential backoff: a server still importing modules needs longer
+      // than one that is already up.
+      await sleep(initialDelayMs * 2 ** (attempt - 1), signal);
     }
   }
 
   throw new DeploymentError(
     "health_check_failed",
     "The server started but did not complete an MCP handshake.",
-    lastError instanceof Error ? lastError.message : String(lastError),
+    lastError,
   );
+}
+
+function toTool(raw: unknown): DiscoveredTool {
+  const t = raw as Record<string, unknown>;
+  return {
+    name: String(t.name ?? ""),
+    title: typeof t.title === "string" ? t.title : null,
+    description: typeof t.description === "string" ? t.description : null,
+    inputSchema: (t.inputSchema as Record<string, unknown>) ?? null,
+    outputSchema: (t.outputSchema as Record<string, unknown>) ?? null,
+  };
+}
+
+function toResource(raw: unknown): DiscoveredResource {
+  const r = raw as Record<string, unknown>;
+  return {
+    uri: String(r.uri ?? ""),
+    name: typeof r.name === "string" ? r.name : null,
+    description: typeof r.description === "string" ? r.description : null,
+    mimeType: typeof r.mimeType === "string" ? r.mimeType : null,
+  };
+}
+
+function toPrompt(raw: unknown): DiscoveredPrompt {
+  const p = raw as Record<string, unknown>;
+  return {
+    name: String(p.name ?? ""),
+    description: typeof p.description === "string" ? p.description : null,
+    arguments: Array.isArray(p.arguments)
+      ? (p.arguments as Record<string, unknown>[])
+      : null,
+  };
 }

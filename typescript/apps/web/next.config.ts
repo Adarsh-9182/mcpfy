@@ -8,6 +8,7 @@ const config: NextConfig = {
     "@mcpfy/db",
     "@mcpfy/detection",
     "@mcpfy/deployment",
+    "@mcpfy/inspector",
   ],
   typedRoutes: true,
   experimental: {

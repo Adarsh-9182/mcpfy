@@ -19,6 +19,7 @@ typescript/
   services/
     detection/      Which MCP framework, runtime and build commands a repo needs
     deployment/     State machine driver, runtime adapters, health check
+    inspector/      MCP client that records every JSON-RPC frame it sends
   packages/
     db/             Drizzle schema, migrations, tenancy, crypto, state machine
     ui/             Design system: tokens + primitives + product components
@@ -63,12 +64,21 @@ PGlite is real Postgres, so enums, `jsonb`, partial indexes and
 `percentile_disc` all behave as they will in production — unlike a SQLite
 stand-in, which would quietly drift.
 
-Two adaptations live in `packages/db/src/client.ts` and exist only for the
-PGlite path: the instance is cached on `globalThis` (Next evaluates server code
-in several module graphs, and two PGlite instances cannot share a data
-directory), and its queries are serialised behind a promise chain seeded with
-`waitReady` (PGlite is a single embedded connection; overlapping queries abort
-the WASM instance). Neither applies to postgres-js.
+Four adaptations live in `packages/db/src/client.ts`, all for the PGlite path
+only and none of them relevant to postgres-js:
+
+- the instance is cached on `globalThis`, because Next evaluates server code in
+  several module graphs and two PGlite instances cannot share a data directory;
+- queries are serialised behind a promise chain seeded with `waitReady`, because
+  PGlite is a single embedded connection and overlapping queries abort the WASM
+  instance;
+- `next build` gets a throwaway in-memory database, because the build forks a
+  pool of workers that would otherwise all open the real one at once — every
+  route is dynamic, so nothing real depends on a build-time query;
+- a lock file names the moment two processes share the directory anyway. It
+  warns rather than refuses, since `next dev` legitimately spans processes; it
+  cannot make PGlite multi-process safe, only make the failure legible and
+  point at the fix, which is Postgres.
 
 ### Commands
 
@@ -177,7 +187,30 @@ streamed over SSE. The stream polls by sequence rather than holding a database
 listener, so a reconnect resumes exactly where it left off. The viewer stops
 auto-scrolling the moment you scroll up.
 
-**Tests (§34)** — 70 unit tests plus one opt-in integration test that
+**Inspector (§13)** — connects to a live server, runs one operation, and
+returns the result together with every JSON-RPC frame that produced it,
+paired into request/response exchanges with per-exchange timing and byte
+counts. The handshake is shown too: it is the part developers never see and
+the part that breaks most often behind a proxy or an auth layer.
+
+Two distinctions the interface is built around. Connect time is reported
+separately from operation time, so a slow handshake is never mistaken for a
+slow tool. And a tool that runs and reports a failure is a *successful call*
+with `isToolError` set — collapsing that into a transport error would send a
+developer debugging the wrong layer entirely.
+
+Executing is separated from reading in the authorization: a viewer can read
+any schema and cannot invoke anything, because `tools/call` runs real code
+with real side effects. Every execution is written to the audit log with the
+argument *keys* only — the values are already on the developer's screen and do
+not also need to be retained.
+
+**Registry (§14)** — tools, resources and prompts, all written by discovery
+rather than by hand, with each tool's JSON Schema rendered as a parameter
+table. Tools that a later deployment no longer advertises are marked removed
+rather than deleted, so historical calls still resolve to a name.
+
+**Tests (§34)** — 80 unit tests plus one opt-in integration test that
 scaffolds a real server with `create-mcpfy-app`, commits it, and deploys it
 through to a live MCP endpoint with its tools discovered.
 
@@ -200,8 +233,10 @@ dead control, it says which phase delivers the feature instead.
 - **Gateway** — nothing routes MCP traffic yet, so `request_log`, `tool_call`
   and `mcp_session` are empty and every metric reads `—`. The overview says so
   rather than drawing a chart. Deployed endpoints are reached directly.
-- **Inspector (§13)** — the landing demo is real and interactive; the product
-  Inspector that talks to a live server is Phase 3.
+- **Saved requests (§13)** — the `saved_request` table exists; naming and
+  replaying a request across sessions does not. History is per page load.
+- **Inspector authentication (§13)** — custom headers and a bearer token are
+  supported by the API; OAuth against a protected server is not.
 - **Rollback (§11)** — `rolled_back` is in the state machine and legal from
   `live`, but no UI or API triggers it yet.
 - **Analytics, sessions, evaluations, marketplace, templates, CLI, AI builder,
@@ -226,6 +261,10 @@ palette does not offer commands whose destination does not exist.
   (`/analytics`, `/logs`) do not exist yet, and a tile that links nowhere is
   the dead UI §48 rules out — so the server page states that no traffic has
   been recorded instead.
+- **§13** asks for saved test cases and OAuth configuration in the Inspector.
+  Executing, schema-driven forms, replay from history and the raw protocol
+  view are built; persistence and OAuth are not, and the page does not pretend
+  otherwise.
 - **§10** describes GitHub as the import path. Repository import is
   implemented against plain git first, because that works without a configured
   GitHub App and covers GitLab, Bitbucket and self-hosted remotes as a side

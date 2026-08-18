@@ -4,6 +4,8 @@ import { db, schema } from "@mcpfy/db/client";
 import type {
   DeploymentStatus,
   DeploymentStore,
+  DiscoveredPrompt,
+  DiscoveredResource,
   DiscoveredTool,
   LogLine,
 } from "@mcpfy/deployment";
@@ -100,24 +102,28 @@ export class DrizzleDeploymentStore implements DeploymentStore {
   }
 
   /**
-   * Replaces the tool registry from a discovery pass.
+   * Records what discovery found for tools, resources and prompts.
    *
-   * Tools are upserted rather than deleted and reinserted: tool_call rows
-   * reference them by name for history, and a tool that disappears is marked
-   * `removed_at` instead of being erased, so old calls still resolve.
+   * Entries are upserted rather than deleted and reinserted: tool_call rows
+   * reference tools by name for history, so a tool that disappears is marked
+   * `removed_at` instead of being erased and old calls still resolve.
    */
-  async replaceTools(
+  async replaceCapabilities(
     serverId: string,
     organizationId: string,
-    tools: DiscoveredTool[],
+    found: {
+      tools: DiscoveredTool[];
+      resources: DiscoveredResource[];
+      prompts: DiscoveredPrompt[];
+    },
   ): Promise<void> {
     const now = new Date();
 
-    if (tools.length > 0) {
+    if (found.tools.length > 0) {
       await db()
         .insert(schema.tool)
         .values(
-          tools.map((tool) => ({
+          found.tools.map((tool) => ({
             organizationId,
             serverId,
             name: tool.name,
@@ -145,7 +151,7 @@ export class DrizzleDeploymentStore implements DeploymentStore {
     // notInArray rather than hand-written `<> all(...)`: the raw form does not
     // bind a JS array as a Postgres array, so it fails at execution time with
     // the whole discovery pass already done.
-    const names = tools.map((t) => t.name);
+    const toolNames = found.tools.map((t) => t.name);
     await db()
       .update(schema.tool)
       .set({ removedAt: now })
@@ -154,7 +160,81 @@ export class DrizzleDeploymentStore implements DeploymentStore {
           eq(schema.tool.serverId, serverId),
           eq(schema.tool.organizationId, organizationId),
           isNull(schema.tool.removedAt),
-          ...(names.length > 0 ? [notInArray(schema.tool.name, names)] : []),
+          ...(toolNames.length > 0
+            ? [notInArray(schema.tool.name, toolNames)]
+            : []),
+        ),
+      );
+
+    if (found.resources.length > 0) {
+      await db()
+        .insert(schema.resource)
+        .values(
+          found.resources.map((resource) => ({
+            organizationId,
+            serverId,
+            uri: resource.uri,
+            name: resource.name ?? null,
+            description: resource.description ?? null,
+            mimeType: resource.mimeType ?? null,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [schema.resource.serverId, schema.resource.uri],
+          set: {
+            name: sql`excluded.name`,
+            description: sql`excluded.description`,
+            mimeType: sql`excluded.mime_type`,
+            updatedAt: now,
+          },
+        });
+    }
+
+    // Resources and prompts carry no historical references, so entries that
+    // vanish are deleted outright rather than tombstoned.
+    const uris = found.resources.map((r) => r.uri);
+    await db()
+      .delete(schema.resource)
+      .where(
+        and(
+          eq(schema.resource.serverId, serverId),
+          eq(schema.resource.organizationId, organizationId),
+          ...(uris.length > 0 ? [notInArray(schema.resource.uri, uris)] : []),
+        ),
+      );
+
+    if (found.prompts.length > 0) {
+      await db()
+        .insert(schema.prompt)
+        .values(
+          found.prompts.map((prompt) => ({
+            organizationId,
+            serverId,
+            name: prompt.name,
+            description: prompt.description ?? null,
+            arguments: prompt.arguments ?? null,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [schema.prompt.serverId, schema.prompt.name],
+          set: {
+            description: sql`excluded.description`,
+            arguments: sql`excluded.arguments`,
+            updatedAt: now,
+          },
+        });
+    }
+
+    const promptNames = found.prompts.map((p) => p.name);
+    await db()
+      .delete(schema.prompt)
+      .where(
+        and(
+          eq(schema.prompt.serverId, serverId),
+          eq(schema.prompt.organizationId, organizationId),
+          ...(promptNames.length > 0
+            ? [notInArray(schema.prompt.name, promptNames)]
+            : []),
         ),
       );
   }

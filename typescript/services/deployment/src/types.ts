@@ -85,11 +85,19 @@ export interface DeploymentStore {
     deploymentId: string,
     endpointUrl: string,
   ): Promise<void>;
-  /** Replace the tool registry for a server with what discovery found. */
-  replaceTools(
+  /**
+   * Replace the tool, resource and prompt registries with what discovery
+   * found. Implementations mark absent entries as removed rather than
+   * deleting them, so historical calls still resolve to a name.
+   */
+  replaceCapabilities(
     serverId: string,
     organizationId: string,
-    tools: DiscoveredTool[],
+    found: {
+      tools: DiscoveredTool[];
+      resources: DiscoveredResource[];
+      prompts: DiscoveredPrompt[];
+    },
   ): Promise<void>;
   setServerHealth(
     serverId: string,
@@ -103,6 +111,19 @@ export interface DiscoveredTool {
   description?: string | null;
   inputSchema?: Record<string, unknown> | null;
   outputSchema?: Record<string, unknown> | null;
+}
+
+export interface DiscoveredResource {
+  uri: string;
+  name?: string | null;
+  description?: string | null;
+  mimeType?: string | null;
+}
+
+export interface DiscoveredPrompt {
+  name: string;
+  description?: string | null;
+  arguments?: Record<string, unknown>[] | null;
 }
 
 /** A failure the developer can act on. `code` drives the §35 error UI. */

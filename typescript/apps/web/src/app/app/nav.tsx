@@ -17,6 +17,9 @@ type NavItem =
   | { href: "/app" | "/app/servers"; label: string; exact?: boolean }
   | { label: string; phase: string };
 
+/** Features that exist but only inside a server, so there is no org-wide page. */
+const PER_SERVER = "per server";
+
 const SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: null,
@@ -33,8 +36,10 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: "Develop",
     items: [
-      { label: "Inspector", phase: "Phase 3" },
-      { label: "Tools", phase: "Phase 3" },
+      // Both exist. They live under a server rather than the organization,
+      // because inspecting or listing tools without one is meaningless.
+      { label: "Inspector", phase: PER_SERVER },
+      { label: "Registry", phase: PER_SERVER },
     ],
   },
   {
@@ -74,7 +79,11 @@ export function DashboardNav() {
                   <li key={item.label}>
                     <span
                       aria-disabled="true"
-                      title={`Arrives in ${item.phase}`}
+                      title={
+                        item.phase === PER_SERVER
+                          ? "Open a server to use this"
+                          : `Arrives in ${item.phase}`
+                      }
                       className="flex cursor-not-allowed items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-base text-faint"
                     >
                       {item.label}

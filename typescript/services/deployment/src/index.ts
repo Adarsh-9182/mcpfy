@@ -14,6 +14,8 @@ export {
   type DeploymentStore,
   type DeploymentStatus,
   type DiscoveredTool,
+  type DiscoveredResource,
+  type DiscoveredPrompt,
   type LogLine,
   type LogSink,
   type LogStream,

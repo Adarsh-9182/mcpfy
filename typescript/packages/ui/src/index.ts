@@ -29,6 +29,19 @@ export { Modal } from "./components/modal";
 export { ToastProvider, useToast } from "./components/toast";
 export { Tooltip } from "./components/tooltip";
 export { CommandMenu, type Command } from "./components/command-menu";
+export { SchemaForm } from "./components/schema-form";
+// Pure schema helpers live outside the client component on purpose — see
+// the note in schema.ts. Server components import them from here safely.
+export {
+  fieldsFromSchema,
+  defaultsForSchema,
+  missingRequired,
+  toArguments,
+  type JsonSchema,
+  type JsonSchemaProperty,
+  type SchemaField,
+  type FieldKind,
+} from "./schema";
 export {
   Shell,
   SidebarSection,

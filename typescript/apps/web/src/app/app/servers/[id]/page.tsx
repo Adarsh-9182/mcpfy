@@ -83,10 +83,24 @@ export default async function ServerPage({
             )}
           </div>
         </div>
-        <DeployButton
-          serverId={server.id}
-          connected={Boolean(server.repositoryId)}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/app/servers/${server.id}/inspector`}
+            className="rounded-[var(--radius-md)] border border-line-default bg-panel px-3 py-1.5 text-base text-muted transition-colors hover:border-line-strong hover:text-fg"
+          >
+            Inspector
+          </Link>
+          <Link
+            href={`/app/servers/${server.id}/tools`}
+            className="rounded-[var(--radius-md)] border border-line-default bg-panel px-3 py-1.5 text-base text-muted transition-colors hover:border-line-strong hover:text-fg"
+          >
+            Registry
+          </Link>
+          <DeployButton
+            serverId={server.id}
+            connected={Boolean(server.repositoryId)}
+          />
+        </div>
       </div>
 
       <ConnectPanel serverName={server.slug} endpoint={endpoint} />
@@ -143,7 +157,12 @@ export default async function ServerPage({
         <Card>
           <CardHeader>
             <CardTitle>Tools</CardTitle>
-            <span className="font-mono text-2xs text-faint">{tools.length}</span>
+            <Link
+              href={`/app/servers/${server.id}/tools`}
+              className="font-mono text-2xs text-subtle transition-colors hover:text-accent-text"
+            >
+              {tools.length} →
+            </Link>
           </CardHeader>
           <CardBody>
             {tools.length === 0 ? (

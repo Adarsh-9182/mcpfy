@@ -1,3 +1,10 @@
+import {
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import postgres from "postgres";
@@ -40,7 +47,7 @@ type Global = typeof globalThis & { [CACHE_KEY]?: Database };
 export function createDatabase(url = process.env.DATABASE_URL): Database {
   if (!url || url.startsWith("pglite://")) {
     const dir = url ? url.slice("pglite://".length) : ".pgdata";
-    return drizzlePglite(serialized(new PGlite(dir)), {
+    return drizzlePglite(serialized(openPglite(dir)), {
       schema,
       casing: "snake_case",
     }) as unknown as Database;
@@ -53,6 +60,87 @@ export function createDatabase(url = process.env.DATABASE_URL): Database {
     prepare: false,
   });
   return drizzlePg(client, { schema, casing: "snake_case" });
+}
+
+/**
+ * Opens the local database, defending against the two ways PGlite gets
+ * corrupted in a Next.js project.
+ *
+ * 1. `next build` forks a pool of workers, and each one evaluates server
+ *    modules. Several processes opening the same data directory destroys it.
+ *    Every route here is dynamic, so nothing real depends on build-time
+ *    queries — the build gets a throwaway in-memory database instead.
+ *
+ * 2. Two dev servers, or a dev server and a migration, racing on the same
+ *    directory does the same damage. A lock file names that the moment it
+ *    happens, instead of a WASM abort ten minutes later that looks like a
+ *    database bug.
+ *
+ * The lock warns rather than refuses: `next dev` legitimately runs the app
+ * across several processes, so a hard failure would block ordinary use. It
+ * cannot make PGlite multi-process safe — nothing can — it can only make the
+ * moment of contention legible, and point at the fix, which is Postgres.
+ */
+function openPglite(dir: string): PGlite {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return new PGlite();
+  }
+  acquireLock(dir);
+  return new PGlite(dir);
+}
+
+function acquireLock(dir: string): void {
+  const lockPath = join(dir, "mcpfy.lock");
+
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(lockPath, String(process.pid), { flag: "wx" });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+
+    const holder = Number(readFileSync(lockPath, "utf8").trim());
+    if (Number.isFinite(holder) && holder !== process.pid && isAlive(holder)) {
+      console.warn(
+        `[mcpfy] The local database at ${dir} is also open by process ${holder}. ` +
+          `PGlite is single-process: concurrent writers can corrupt it. If the ` +
+          `database starts failing with "Aborted()", this is why — set ` +
+          `DATABASE_URL to a Postgres instance to run several processes safely.`,
+      );
+    }
+
+    // Take ownership either way: the holder may simply have crashed.
+    writeFileSync(lockPath, String(process.pid));
+  }
+
+  const release = () => {
+    try {
+      if (readFileSync(lockPath, "utf8").trim() === String(process.pid)) {
+        unlinkSync(lockPath);
+      }
+    } catch {
+      // Nothing useful to do while the process is exiting.
+    }
+  };
+
+  process.once("exit", release);
+  process.once("SIGINT", () => {
+    release();
+    process.exit(130);
+  });
+  process.once("SIGTERM", () => {
+    release();
+    process.exit(143);
+  });
+}
+
+function isAlive(pid: number): boolean {
+  try {
+    // Signal 0 checks for existence without delivering anything.
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
 }
 
 /**

@@ -51,8 +51,16 @@ class RecordingStore implements DeploymentStore {
   async promoteEnvironment(_e: string, _d: string, url: string) {
     this.promotedUrl = url;
   }
-  async replaceTools(_s: string, _o: string, tools: DiscoveredTool[]) {
-    this.tools = tools;
+  resources: unknown[] = [];
+  prompts: unknown[] = [];
+  async replaceCapabilities(
+    _s: string,
+    _o: string,
+    found: { tools: DiscoveredTool[]; resources: unknown[]; prompts: unknown[] },
+  ) {
+    this.tools = found.tools;
+    this.resources = found.resources;
+    this.prompts = found.prompts;
   }
   async setServerHealth(_s: string, health: string) {
     this.health = health;
@@ -176,5 +184,9 @@ describe("local runtime, end to end", { skip: !ENABLED }, () => {
     assert.ok(add, `expected an "add" tool, got: ${store.tools.map((x) => x.name)}`);
     assert.match(String(add.description), /add/i);
     assert.ok(add.inputSchema, "the tool schema should be captured verbatim");
+
+    // The scaffold ships one of each, so discovery must find all three.
+    assert.equal(store.resources.length, 1, "expected the greeting resource");
+    assert.equal(store.prompts.length, 1, "expected the greet prompt");
   });
 });
