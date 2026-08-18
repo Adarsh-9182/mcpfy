@@ -14,7 +14,7 @@ import {
 } from "@mcpfy/ui";
 import { createServerAction, type CreateServerState } from "../actions";
 
-type Source = "url" | "cli" | "github";
+type Source = "url" | "git" | "cli" | "github";
 
 const SOURCES: {
   id: Source;
@@ -30,6 +30,12 @@ const SOURCES: {
     available: true,
   },
   {
+    id: "git",
+    title: "Build from a git repository",
+    body: "MCPfy clones the repository, works out how to build it, runs it, and checks the MCP handshake before it goes live.",
+    available: true,
+  },
+  {
     id: "cli",
     title: "Empty server",
     body: "Create the record now and push code later with `mcpfy deploy`.",
@@ -38,10 +44,10 @@ const SOURCES: {
   {
     id: "github",
     title: "Import from GitHub",
-    body: "Detect the framework, build on every push and get a preview endpoint per branch.",
+    body: "Pick a repository from your account, and redeploy automatically on every push.",
     available: false,
     unavailableReason:
-      "The build and deploy pipeline is not live yet. Connecting a repository would create a server that can never deploy, so the option is disabled rather than misleading.",
+      "Needs the GitHub App for repository listing and push webhooks. Until then, paste the repository's https:// URL under \u201cBuild from a git repository\u201d \u2014 the build works identically, it just will not redeploy on push.",
   },
 ];
 
@@ -113,6 +119,32 @@ export function CreateServerForm({ githubReady }: { githubReady: boolean }) {
         </Description>
       </Field>
 
+      {source === "git" ? (
+        <>
+          <Field error={state.fieldErrors?.repositoryUrl}>
+            <Label>Repository URL</Label>
+            <Input
+              name="repositoryUrl"
+              mono
+              placeholder="https://github.com/owner/repo.git"
+            />
+            <Description>
+              Cloned once now so MCPfy can detect the framework, runtime and
+              build commands before you deploy. Public repositories only for
+              the moment.
+            </Description>
+          </Field>
+
+          <Field>
+            <Label hint="optional">Branch</Label>
+            <Input name="branch" mono placeholder="main" />
+            <Description>
+              Leave blank to use the repository&rsquo;s default branch.
+            </Description>
+          </Field>
+        </>
+      ) : null}
+
       {source === "url" ? (
         <>
           <Field error={state.fieldErrors?.endpointUrl}>
@@ -152,7 +184,9 @@ export function CreateServerForm({ githubReady }: { githubReady: boolean }) {
           Create server
         </Button>
         <span className="text-2xs text-faint">
-          Tool discovery runs after the first successful connection.
+          {source === "git"
+            ? "Cloning and detection take a few seconds."
+            : "Tool discovery runs after the first successful connection."}
         </span>
       </div>
     </form>

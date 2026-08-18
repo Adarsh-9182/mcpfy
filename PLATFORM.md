@@ -16,6 +16,9 @@ not built yet. The product specification it is being built against is a
 typescript/
   apps/
     web/            Next.js 16 — marketing site, auth, dashboard, /api/v1
+  services/
+    detection/      Which MCP framework, runtime and build commands a repo needs
+    deployment/     State machine driver, runtime adapters, health check
   packages/
     db/             Drizzle schema, migrations, tenancy, crypto, state machine
     ui/             Design system: tokens + primitives + product components
@@ -71,11 +74,28 @@ the WASM instance). Neither applies to postgres-js.
 
 ```bash
 pnpm dev                # from typescript/ — runs the web app
-pnpm typecheck          # db + ui + web
-pnpm test               # sdk + db unit tests
+pnpm typecheck          # every workspace package
+pnpm test               # sdk + db + detection + deployment unit tests
 pnpm db:generate        # regenerate migrations after a schema change
 pnpm db:migrate         # apply them
+
+# The end-to-end deployment test really clones, installs and starts a server,
+# so it is opt-in:
+MCPFY_E2E=1 pnpm --filter @mcpfy/deployment test
 ```
+
+### Deploying something
+
+Set `MCPFY_ALLOW_LOCAL_RUNTIME=1`, create a server with a repository URL, and
+press Deploy. MCPfy clones the repository, runs the detected install and build
+commands, starts the server on an allocated port, completes an MCP handshake
+against it, and records the tools it advertises.
+
+The local runtime executes repository commands **directly on the host with no
+sandbox**. That is correct for development and for self-hosting your own code,
+and wrong for anything that builds other people's repositories — which is why
+it refuses to start unless that variable is set. The sandbox is a container
+adapter behind the same `RuntimeAdapter` interface, and it does not exist yet.
 
 ---
 
@@ -131,9 +151,35 @@ client configuration for Claude Desktop, Cursor, VS Code and the CLI.
 or a `Bearer` API key, with a consistent `{ error: { code, message } }`
 envelope.
 
-**Tests (§34)** — 33 unit tests over the state machine, tenancy guards and
-crypto, including that a tampered ciphertext fails its auth tag and that a
-replayed webhook outside the tolerance window is rejected.
+**Framework detection (§10)** — a backend service, not logic in a component:
+reads a repository through a `SourceTree` interface (GitHub, a checkout, or a
+test fixture all satisfy it) and returns the framework, runtime, package
+manager and install/build/start commands, each with the evidence that produced
+it. The server page shows that evidence, so a developer who disagrees with the
+detection can see what it looked at before overriding.
+
+**Deployment engine (§11)** — an orchestrator that owns the state machine,
+the logs and the database, and a `RuntimeAdapter` that owns compute. Every
+status change goes through `assertTransition`, and the failure path is written
+so that it cannot itself throw — a deployment can fail, but it cannot get
+stuck mid-flight. `LocalRuntime` is a real adapter: it clones at a commit,
+installs, builds, starts a supervised child process on an allocated port, and
+registers it so it can be cancelled or superseded.
+
+**Health check and tool discovery (§14, §44)** — a deployment is not live
+because a port is open. The check is a real MCP handshake through
+`mcpfy-sdk`'s own client — connect, initialize, `tools/list` — which is
+exactly what Claude or Cursor will do moments later. Discovery comes free with
+it and fills the tool registry, including each tool's JSON Schema.
+
+**Live build logs (§11)** — persisted with a monotonic sequence number and
+streamed over SSE. The stream polls by sequence rather than holding a database
+listener, so a reconnect resumes exactly where it left off. The viewer stops
+auto-scrolling the moment you scroll up.
+
+**Tests (§34)** — 70 unit tests plus one opt-in integration test that
+scaffolds a real server with `create-mcpfy-app`, commits it, and deploys it
+through to a live MCP endpoint with its tools discovered.
 
 ---
 
@@ -142,16 +188,24 @@ replayed webhook outside the tolerance window is rejected.
 Listed because §48 forbids simulating it. Where the UI would otherwise show a
 dead control, it says which phase delivers the feature instead.
 
-- **Deployment engine (§11, §12)** — no build, no runtime, no preview
-  environments. GitHub import is disabled in the create-server form with the
-  reason shown inline.
+- **Sandboxed runtime** — the only adapter is `LocalRuntime`, which runs
+  builds on the host. Multi-tenant hosting needs a container or microVM
+  adapter behind the same interface.
+- **GitHub App (§10)** — repository *listing* and push-triggered redeploys.
+  Building from a repository works today by pasting its URL; what is missing
+  is picking one from your account and redeploying on push. The create-server
+  form says exactly that instead of offering a button that fails.
+- **Preview environments (§12)** — the schema models them and deployments
+  target an environment, but nothing creates one per branch yet.
 - **Gateway** — nothing routes MCP traffic yet, so `request_log`, `tool_call`
   and `mcp_session` are empty and every metric reads `—`. The overview says so
-  rather than drawing a chart.
+  rather than drawing a chart. Deployed endpoints are reached directly.
 - **Inspector (§13)** — the landing demo is real and interactive; the product
   Inspector that talks to a live server is Phase 3.
+- **Rollback (§11)** — `rolled_back` is in the state machine and legal from
+  `live`, but no UI or API triggers it yet.
 - **Analytics, sessions, evaluations, marketplace, templates, CLI, AI builder,
-  webhooks delivery, billing** — schema and, where relevant, crypto and state
+  webhook delivery, billing** — schema and, where relevant, crypto and state
   machines exist; the services do not.
 
 Sidebar entries for these render disabled with their phase, and the command
@@ -172,3 +226,8 @@ palette does not offer commands whose destination does not exist.
   (`/analytics`, `/logs`) do not exist yet, and a tile that links nowhere is
   the dead UI §48 rules out — so the server page states that no traffic has
   been recorded instead.
+- **§10** describes GitHub as the import path. Repository import is
+  implemented against plain git first, because that works without a configured
+  GitHub App and covers GitLab, Bitbucket and self-hosted remotes as a side
+  effect. The GitHub App adds listing and push webhooks on top of it rather
+  than replacing it.

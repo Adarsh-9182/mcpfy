@@ -129,3 +129,48 @@ export async function assertSafeUrl(
 
   return url;
 }
+
+/**
+ * §25 — the same protection for git remotes.
+ *
+ * `git clone` is an outbound fetch the user controls, so it needs the same
+ * treatment as an MCP endpoint. Two differences: git URLs may be scp-style
+ * (`git@host:owner/repo`), which `new URL()` cannot parse; and a local path
+ * is legitimate in development but never in production, where it would let
+ * anyone read the deployment host's filesystem.
+ */
+export async function assertSafeGitUrl(
+  raw: string,
+  { allowLocalPaths = process.env.NODE_ENV !== "production" } = {},
+): Promise<string> {
+  const value = raw.trim();
+
+  if (!value) throw new UnsafeUrlError("Enter a repository URL.");
+
+  // scp-style: git@github.com:owner/repo.git
+  const scp = value.match(/^([\w.-]+)@([\w.-]+):(.+)$/);
+  if (scp) {
+    throw new UnsafeUrlError(
+      "SSH remotes are not supported yet. Use the https:// URL instead.",
+    );
+  }
+
+  if (value.startsWith("/") || value.startsWith("file://")) {
+    if (!allowLocalPaths) {
+      throw new UnsafeUrlError(
+        "Local paths cannot be used as repositories on a hosted MCPfy.",
+      );
+    }
+    return value;
+  }
+
+  if (!/^https?:\/\//.test(value)) {
+    throw new UnsafeUrlError(
+      "Repository URLs must start with https://, for example " +
+        "https://github.com/owner/repo.git",
+    );
+  }
+
+  const url = await assertSafeUrl(value, { allowLoopback: allowLocalPaths });
+  return url.toString();
+}

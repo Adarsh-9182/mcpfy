@@ -17,6 +17,12 @@ importers:
       '@mcpfy/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@mcpfy/deployment':
+        specifier: workspace:*
+        version: link:../../services/deployment
+      '@mcpfy/detection':
+        specifier: workspace:*
+        version: link:../../services/detection
       '@mcpfy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -215,6 +221,40 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.0
         version: 19.2.4(@types/react@19.2.18)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  services/deployment:
+    dependencies:
+      '@mcpfy/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@mcpfy/detection':
+        specifier: workspace:*
+        version: link:../detection
+      mcpfy-sdk:
+        specifier: workspace:*
+        version: link:../../packages/mcpfy
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  services/detection:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

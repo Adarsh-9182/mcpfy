@@ -120,6 +120,12 @@ export const server = pgTable(
     transport: transportEnum("transport").notNull().default("streamable_http"),
     region: text("region").notNull().default("iad1"),
     rootDirectory: text("root_directory").notNull().default("."),
+    /**
+     * Populated by detection and overridable by the user. Null means "skip
+     * this step", which is different from "we could not work it out" — that
+     * case is recorded in `detection.warnings`.
+     */
+    installCommand: text("install_command"),
     buildCommand: text("build_command"),
     startCommand: text("start_command"),
     /** Detection output kept verbatim so we can explain *why* we chose a runtime. */

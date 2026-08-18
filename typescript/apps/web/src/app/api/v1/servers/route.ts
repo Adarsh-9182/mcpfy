@@ -4,7 +4,12 @@ import { db, schema } from "@mcpfy/db/client";
 import { AuthorizationError, owned, requireRole, scoped } from "@mcpfy/db";
 import { apiError, tenantFromRequest } from "@/lib/api-auth";
 import { slugify, uniqueSlug } from "@/lib/slug";
-import { assertSafeUrl, UnsafeUrlError } from "@/lib/ssrf";
+import { assertSafeUrl, assertSafeGitUrl, UnsafeUrlError } from "@/lib/ssrf";
+import {
+  DeploymentError,
+  inspectRepository,
+  type RepositoryInspection,
+} from "@mcpfy/deployment";
 import { ensureDefaultProject } from "@/lib/projects";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +49,9 @@ export async function GET(request: Request) {
 const CreateBody = z.object({
   name: z.string().trim().min(2).max(64),
   endpoint_url: z.url().optional(),
+  /** A git URL MCPfy will clone, inspect and build. */
+  repository_url: z.string().trim().optional(),
+  branch: z.string().trim().optional(),
   transport: z.enum(["streamable_http", "sse", "stdio"]).default("streamable_http"),
   project_id: z.string().optional(),
 });
@@ -110,6 +118,31 @@ export async function POST(request: Request) {
     projectId = (await ensureDefaultProject(ctx.organizationId)).id;
   }
 
+  // Cloning happens before the transaction: it takes seconds, and holding a
+  // database transaction open across a network fetch is how connection pools
+  // die under load.
+  let inspection: RepositoryInspection | null = null;
+  if (parsed.data.repository_url) {
+    try {
+      await assertSafeGitUrl(parsed.data.repository_url);
+      inspection = await inspectRepository(parsed.data.repository_url, {
+        branch: parsed.data.branch,
+      });
+    } catch (e) {
+      if (e instanceof UnsafeUrlError) {
+        return apiError(422, "unsafe_repository", e.message);
+      }
+      if (e instanceof DeploymentError) {
+        return apiError(
+          422,
+          e.code,
+          e.detail ? `${e.message} ${e.detail}` : e.message,
+        );
+      }
+      throw e;
+    }
+  }
+
   const taken = await db()
     .select({ slug: schema.server.slug })
     .from(schema.server)
@@ -121,14 +154,61 @@ export async function POST(request: Request) {
   );
 
   const created = await db().transaction(async (tx) => {
+    let repositoryId: string | null = null;
+    if (inspection && parsed.data.repository_url) {
+      const [repo] = await tx
+        .insert(schema.repository)
+        .values(
+          owned(ctx, {
+            provider: "git",
+            externalId: parsed.data.repository_url,
+            owner: inspection.owner,
+            name: inspection.name,
+            defaultBranch: parsed.data.branch ?? inspection.defaultBranch,
+            connectedByUserId: ctx.userId ?? null,
+          }),
+        )
+        .onConflictDoUpdate({
+          target: [schema.repository.provider, schema.repository.externalId],
+          set: {
+            defaultBranch: parsed.data.branch ?? inspection.defaultBranch,
+          },
+        })
+        .returning({ id: schema.repository.id });
+      repositoryId = repo?.id ?? null;
+    }
+
+    const detection = inspection?.detection;
+
     const [server] = await tx
       .insert(schema.server)
       .values(
         owned(ctx, {
           projectId,
+          repositoryId,
           name: parsed.data.name,
           slug,
           transport: parsed.data.transport,
+          framework: detection?.framework ?? "unknown",
+          runtime:
+            detection?.runtime === "docker"
+              ? "docker"
+              : (detection?.runtime ?? "node22"),
+          rootDirectory: detection?.rootDirectory ?? ".",
+          installCommand: detection?.installCommand ?? null,
+          buildCommand: detection?.buildCommand ?? null,
+          startCommand: detection?.startCommand ?? null,
+          detection: detection
+            ? {
+                confidence: detection.confidence,
+                language: detection.language,
+                packageManager: detection.packageManager,
+                evidence: detection.evidence,
+                warnings: detection.warnings,
+                headSha: inspection?.headSha,
+                inspectedAt: new Date().toISOString(),
+              }
+            : null,
         }),
       )
       .returning();

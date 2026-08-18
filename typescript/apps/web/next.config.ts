@@ -3,13 +3,23 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   // Workspace packages ship TypeScript source rather than a build step, so
   // Next compiles them alongside the app.
-  transpilePackages: ["@mcpfy/ui", "@mcpfy/db"],
+  transpilePackages: [
+    "@mcpfy/ui",
+    "@mcpfy/db",
+    "@mcpfy/detection",
+    "@mcpfy/deployment",
+  ],
   typedRoutes: true,
   experimental: {
     // PGlite and postgres-js are Node-only; keep them out of the client graph.
     serverActions: { bodySizeLimit: "2mb" },
   },
-  serverExternalPackages: ["@electric-sql/pglite", "postgres"],
+  serverExternalPackages: [
+    "@electric-sql/pglite",
+    "postgres",
+    // Spawns child processes and opens sockets; must not be bundled.
+    "mcpfy-sdk",
+  ],
   async headers() {
     return [
       {

@@ -1,0 +1,23 @@
+{
+  "name": "@mcpfy/deployment",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Drives a deployment through its state machine and runs it on a pluggable runtime.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mcpfy/db": "workspace:*",
+    "@mcpfy/detection": "workspace:*",
+    "mcpfy-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}

@@ -7,7 +7,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  CodeBlock,
   EmptyState,
   StatusDot,
 } from "@mcpfy/ui";
@@ -20,6 +19,8 @@ import {
 } from "@/lib/servers";
 import { STATUS_LABEL } from "@mcpfy/db";
 import { ConnectPanel } from "./connect-panel";
+import { DeployButton } from "./deploy-button";
+import { DetectionPanel } from "./detection-panel";
 
 export async function generateMetadata({
   params,
@@ -82,9 +83,21 @@ export default async function ServerPage({
             )}
           </div>
         </div>
+        <DeployButton
+          serverId={server.id}
+          connected={Boolean(server.repositoryId)}
+        />
       </div>
 
       <ConnectPanel serverName={server.slug} endpoint={endpoint} />
+
+      <DetectionPanel
+        detection={server.detection}
+        rootDirectory={server.rootDirectory}
+        installCommand={server.installCommand}
+        buildCommand={server.buildCommand}
+        startCommand={server.startCommand}
+      />
 
       {/*
         No metric tiles here yet. Tiles that link nowhere are exactly the dead
@@ -137,18 +150,30 @@ export default async function ServerPage({
               <p className="text-base leading-relaxed text-muted">
                 No tools discovered yet.{" "}
                 <span className="text-subtle">
-                  Discovery runs a <code className="font-mono">tools/list</code>{" "}
-                  against the endpoint after a deployment reaches its health
-                  check. That step arrives with the deployment engine.
+                  Discovery runs <code className="font-mono">tools/list</code>{" "}
+                  against the endpoint when a deployment passes its health
+                  check, and records what it finds here.
                 </span>
               </p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-3">
                 {tools.map((tool) => (
-                  <li key={tool.id}>
-                    <p className="font-mono text-base text-hi">{tool.name}</p>
+                  <li key={tool.id} className={tool.removedAt ? "opacity-50" : ""}>
+                    <p className="flex items-center gap-2 font-mono text-base text-hi">
+                      {tool.name}
+                      {tool.removedAt ? (
+                        <Badge tone="warning">removed</Badge>
+                      ) : null}
+                    </p>
                     {tool.description ? (
-                      <p className="text-2xs text-muted">{tool.description}</p>
+                      <p className="mt-0.5 text-2xs leading-relaxed text-muted">
+                        {tool.description}
+                      </p>
+                    ) : null}
+                    {tool.inputSchema ? (
+                      <p className="mt-1 font-mono text-2xs text-faint">
+                        {argumentSummary(tool.inputSchema)}
+                      </p>
                     ) : null}
                   </li>
                 ))}
@@ -159,34 +184,63 @@ export default async function ServerPage({
       </div>
 
       <section className="mt-6">
-        <h2 className="mb-3 text-lg font-medium text-hi">Deployments</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-medium text-hi">Deployments</h2>
+          {deployments.length > 0 ? (
+            <Link
+              href={`/app/servers/${server.id}/deployments`}
+              className="text-2xs text-subtle transition-colors hover:text-accent-text"
+            >
+              View all →
+            </Link>
+          ) : null}
+        </div>
         {deployments.length === 0 ? (
           <EmptyState
             title="No deployments"
             what="Deployments record every build, its logs and the endpoint it produced."
-            why="This server has not been deployed through MCPfy."
+            why={
+              server.repositoryId
+                ? "This server has not been built yet."
+                : "This server has no connected repository, so there is nothing to build."
+            }
             actions={
-              <CodeBlock
-                code={`mcpfy deploy --server ${server.slug}`}
-                language="bash"
-                className="text-left"
+              <DeployButton
+                serverId={server.id}
+                connected={Boolean(server.repositoryId)}
               />
             }
           />
         ) : (
           <ul className="divide-y divide-[var(--border-subtle)] overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface">
             {deployments.map((d) => (
-              <li
-                key={d.id}
-                className="flex items-center justify-between gap-3 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-mono text-base text-hi">#{d.number}</p>
-                  <p className="truncate text-2xs text-faint">
-                    {d.commitMessage ?? d.branch ?? "manual deployment"}
-                  </p>
-                </div>
-                <Badge mono>{STATUS_LABEL[d.status]}</Badge>
+              <li key={d.id}>
+                <Link
+                  href={`/app/servers/${server.id}/deployments/${d.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-panel"
+                >
+                  <div className="min-w-0">
+                    <p className="font-mono text-base text-hi">#{d.number}</p>
+                    <p className="truncate text-2xs text-faint">
+                      {d.errorMessage ??
+                        d.commitMessage ??
+                        d.branch ??
+                        "manual deployment"}
+                    </p>
+                  </div>
+                  <Badge
+                    mono
+                    tone={
+                      d.status === "live"
+                        ? "success"
+                        : d.status === "failed"
+                          ? "danger"
+                          : "neutral"
+                    }
+                  >
+                    {STATUS_LABEL[d.status]}
+                  </Badge>
+                </Link>
               </li>
             ))}
           </ul>
@@ -194,4 +248,17 @@ export default async function ServerPage({
       </section>
     </>
   );
+}
+
+/** A one-line "name: type" summary of a tool's JSON Schema arguments. */
+function argumentSummary(schema: Record<string, unknown>): string {
+  const properties = schema.properties;
+  if (!properties || typeof properties !== "object") return "no arguments";
+  const required = new Set(
+    Array.isArray(schema.required) ? (schema.required as string[]) : [],
+  );
+  const parts = Object.entries(properties as Record<string, { type?: string }>)
+    .map(([name, prop]) => `${name}${required.has(name) ? "" : "?"}: ${prop.type ?? "any"}`)
+    .slice(0, 6);
+  return parts.length > 0 ? parts.join(", ") : "no arguments";
 }

@@ -14,8 +14,8 @@
     "dev": "pnpm --filter @mcpfy/web dev",
     "db:generate": "pnpm --filter @mcpfy/db generate",
     "db:migrate": "pnpm --filter @mcpfy/web db:migrate",
-    "test": "pnpm --filter mcpfy-sdk test && pnpm --filter @mcpfy/db test",
-    "typecheck": "pnpm -r --filter @mcpfy/db --filter @mcpfy/ui --filter @mcpfy/web typecheck"
+    "test": "pnpm --filter mcpfy-sdk test && pnpm --filter @mcpfy/db test && pnpm --filter @mcpfy/detection test && pnpm --filter @mcpfy/deployment test",
+    "typecheck": "pnpm -r --filter @mcpfy/db --filter @mcpfy/ui --filter @mcpfy/detection --filter @mcpfy/deployment --filter @mcpfy/web typecheck"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
