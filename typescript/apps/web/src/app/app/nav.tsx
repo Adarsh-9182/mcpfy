@@ -20,7 +20,10 @@ type NavItem =
         | "/app/servers"
         | "/app/settings/api-keys"
         | "/app/settings/sessions"
-        | "/app/settings/billing";
+        | "/app/settings/billing"
+        // Public, but reached from inside the dashboard: a developer looking
+        // for something to connect goes to the same registry everyone else does.
+        | "/registry";
       label: string;
       exact?: boolean;
     }
@@ -39,7 +42,7 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
     items: [
       { href: "/app/servers", label: "Servers" },
       { label: "Templates", phase: "Phase 5" },
-      { label: "Registry", phase: "Phase 5" },
+      { href: "/registry", label: "Registry" },
     ],
   },
   {

@@ -41,6 +41,9 @@ importers:
       '@mcpfy/readiness':
         specifier: workspace:*
         version: link:../../services/readiness
+      '@mcpfy/registry':
+        specifier: workspace:*
+        version: link:../../services/registry
       '@mcpfy/ui':
         specifier: workspace:*
         version: link:../../packages/ui

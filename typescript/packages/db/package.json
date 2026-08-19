@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
     "db:up": "node --import tsx scripts/dev-db.mts up",
-    "db:down": "node --import tsx scripts/dev-db.mts down"
+    "db:down": "node --import tsx scripts/dev-db.mts down",
+    "db:seed-registry": "node --import tsx scripts/seed-registry.mts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

@@ -28,7 +28,8 @@
     "@mcpfy/gateway": "workspace:*",
     "@mcpfy/readiness": "workspace:*",
     "@mcpfy/control-mcp": "workspace:*",
-    "@mcpfy/billing": "workspace:*"
+    "@mcpfy/billing": "workspace:*",
+    "@mcpfy/registry": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
