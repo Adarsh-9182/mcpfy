@@ -4,13 +4,13 @@ import { SiteHeader } from "@/components/marketing/site-header";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { Hero } from "@/components/marketing/hero";
 import {
-  Architecture,
-  Capabilities,
-  CallToAction,
-  Inspector,
-  OpenSource,
-  Security,
-} from "@/components/marketing/sections";
+  Distribution,
+  InspectorStage,
+  Lifecycle,
+} from "@/components/marketing/lifecycle";
+import { Comparison } from "@/components/marketing/comparison";
+import { Faq } from "@/components/marketing/faq";
+import { OpenSource } from "@/components/marketing/sections";
 
 export const metadata: Metadata = {
   title: "MCPfy — Build, deploy and observe MCP servers",
@@ -42,12 +42,12 @@ export default async function HomePage() {
       <SiteHeader signedIn={Boolean(viewer)} />
       <main id="main">
         <Hero />
-        <Architecture />
-        <Inspector />
-        <Capabilities />
-        <Security />
+        <Lifecycle />
+        <InspectorStage />
+        <Distribution />
+        <Comparison />
         <OpenSource />
-        <CallToAction />
+        <Faq />
       </main>
       <SiteFooter />
     </>
