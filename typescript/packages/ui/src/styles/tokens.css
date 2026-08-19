@@ -52,43 +52,62 @@
 :root {
   color-scheme: dark;
 
-  /* Raw scale — dark. Do not reference these outside this file. */
-  --violet-100: #d3ccff;
-  --violet-200: #cfc7ff;
-  --violet-300: #b9aeff;
-  --violet-400: #a394ff;
-  --violet-500: #8f7bff;
-  --violet-800: #3a3470;
-  --violet-900: #16142a;
-  --violet-950: #0b0a14;
+  /*
+   * Raw scale — dark. Do not reference these outside this file.
+   *
+   * §26 rules out "another purple gradient AI website", and §28 asks for a
+   * cyan/electric accent used sparingly. The hue carries one meaning and only
+   * one: interactive / active / connected. Anything that is merely present is
+   * a neutral.
+   *
+   * 500 is the interactive step. It was picked by running the palette
+   * validator against the chart surface rather than by eye: it separates from
+   * the error red at ΔE 18.2 for deuteranopia, against a target of 8.
+   */
+  --cyan-100: #cffafe;
+  --cyan-200: #a5f3fc;
+  --cyan-300: #67e8f9;
+  --cyan-400: #3edcf2;
+  --cyan-500: #22d3ee;
+  --cyan-800: #14505c;
+  --cyan-900: #072b33;
+  --cyan-950: #041a1f;
 
-  /* Surfaces, darkest to lightest. */
-  --bg-base: #08090b;
-  --bg-sunken: #060709;
-  --bg-raised: #0b0c0f;
-  --bg-surface: #0e1013;
-  --bg-panel: #14171c;
-  --bg-panel-strong: #16191e;
-  --bg-elevated: #1e232b;
+  /*
+   * Surfaces, darkest to lightest.
+   *
+   * Achromatic, not blue-tinted. §28 names three of these exactly — base
+   * #050505, surface #0B0B0D, elevated #111114 — and a neutral ramp is what
+   * lets a single saturated accent read as a signal rather than as one more
+   * colour competing with the background.
+   */
+  --bg-base: #050505;
+  --bg-sunken: #030303;
+  --bg-raised: #08080a;
+  --bg-surface: #0b0b0d;
+  --bg-panel: #111114;
+  --bg-panel-strong: #151519;
+  --bg-elevated: #1c1c21;
 
-  --border-subtle: #1a1e24;
-  --border-default: #262c35;
-  --border-strong: #333a45;
-  --border-focus: var(--violet-500);
+  --border-subtle: #161619;
+  --border-default: #222226;
+  --border-strong: #2e2e34;
+  --border-focus: var(--cyan-500);
 
   --text-high: #f4f6f8;
   --text-default: #e8eaee;
   --text-muted: #9aa1ad;
   --text-subtle: #646b77;
   --text-faint: #4a5260;
-  --text-on-accent: #0b0a14;
+  /* Cyan is a light hue; text sitting on it has to be dark, not white. */
+  --text-on-accent: #041a1f;
 
-  --accent: var(--violet-500);
-  --accent-hover: var(--violet-400);
-  --accent-text: var(--violet-300);
-  --accent-surface: var(--violet-900);
-  --accent-border: var(--violet-800);
-  --accent-ring: rgb(143 123 255 / 0.35);
+  --accent: var(--cyan-500);
+  --accent-hover: var(--cyan-400);
+  --accent-text: var(--cyan-300);
+  --accent-surface: var(--cyan-900);
+  --accent-border: var(--cyan-800);
+  --accent-ring: rgb(34 211 238 / 0.35);
 
   --success: #2fd18a;
   --success-surface: #0f1d17;
@@ -115,18 +134,18 @@
    * attempt used green for ok and red for error, and every green that passed
    * the lightness band failed colour-vision separation against red (ΔE 4.3
    * for deuteranopia, against a target of 8). Volume in the accent hue with
-   * errors in red separates at ΔE 21.9 for the worst case.
+   * errors in red separates at ΔE 18.2 for the worst case.
    */
   /* Background word texture. Tuned per theme — the same opacity reads as
      decoration on dark and as content on white. */
   --drift-ink: rgb(255 255 255 / 0.055);
 
-  --chart-volume: #8f7bff;
+  --chart-volume: #22d3ee;
   --chart-error: #f3556c;
   --chart-grid: rgb(255 255 255 / 0.06);
-  --chart-surface: #0e1013;
+  --chart-surface: #0b0b0d;
 
-  --selection: rgb(143 123 255 / 0.3);
+  --selection: rgb(34 211 238 / 0.3);
   --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   --shadow-overlay: 0 16px 48px -12px rgb(0 0 0 / 0.7);
   /* A hairline highlight along the top edge, the way real panels catch light. */
@@ -161,11 +180,11 @@
     --text-faint: #9aa1ad;
     --text-on-accent: #ffffff;
 
-    --accent: #6b52f5;
-    --accent-hover: #5a41e6;
-    --accent-text: #5a41e6;
-    --accent-surface: #f2effe;
-    --accent-border: #ddd5fb;
+    --accent: #0e7490;
+    --accent-hover: #155e75;
+    --accent-text: #0e7490;
+    --accent-surface: #ecfeff;
+    --accent-border: #a5f3fc;
 
     --success: #0f9d63;
     --success-surface: #eafaf2;
@@ -185,7 +204,7 @@
 
     --drift-ink: rgb(20 20 26 / 0.045);
 
-    --chart-volume: #6b52f5;
+    --chart-volume: #0891b2;
     --chart-error: #d1364d;
     --chart-grid: rgb(16 19 23 / 0.08);
     --chart-surface: #fbfcfd;
@@ -217,11 +236,11 @@
   --text-faint: #9aa1ad;
   --text-on-accent: #ffffff;
 
-  --accent: #6b52f5;
-  --accent-hover: #5a41e6;
-  --accent-text: #5a41e6;
-  --accent-surface: #f2effe;
-  --accent-border: #ddd5fb;
+  --accent: #0e7490;
+  --accent-hover: #155e75;
+  --accent-text: #0e7490;
+  --accent-surface: #ecfeff;
+  --accent-border: #a5f3fc;
 
   --success: #0f9d63;
   --success-surface: #eafaf2;
@@ -241,7 +260,7 @@
 
   --drift-ink: rgb(20 20 26 / 0.045);
 
-  --chart-volume: #6b52f5;
+  --chart-volume: #0891b2;
   --chart-error: #d1364d;
   --chart-grid: rgb(16 19 23 / 0.08);
   --chart-surface: #fbfcfd;

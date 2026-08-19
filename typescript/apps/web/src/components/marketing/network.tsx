@@ -166,14 +166,14 @@ export function NetworkDiagram() {
           </filter>
 
           <radialGradient id="net-hub">
-            <stop offset="0%" stopColor="var(--violet-300)" />
-            <stop offset="100%" stopColor="var(--violet-500)" />
+            <stop offset="0%" stopColor="var(--accent-text)" />
+            <stop offset="100%" stopColor="var(--accent)" />
           </radialGradient>
 
           <radialGradient id="net-halo">
-            <stop offset="0%" stopColor="var(--violet-500)" stopOpacity="0.30" />
-            <stop offset="70%" stopColor="var(--violet-500)" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="var(--violet-500)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.30" />
+            <stop offset="70%" stopColor="var(--accent)" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
           </radialGradient>
 
           {NODES.map((node) => (
@@ -192,7 +192,7 @@ export function NetworkDiagram() {
                 key={node.id}
                 href={`#net-path-${node.id}`}
                 stroke={
-                  active === node.id ? "var(--violet-400)" : "var(--border-strong)"
+                  active === node.id ? "var(--accent-hover)" : "var(--border-strong)"
                 }
                 strokeWidth={active === node.id ? 1.6 : 1}
                 opacity={lit ? 1 : 0.25}
@@ -213,7 +213,7 @@ export function NetworkDiagram() {
                   r={active === node.id ? 4 : 3}
                   fill={
                     node.direction === "inbound"
-                      ? "var(--violet-300)"
+                      ? "var(--accent-text)"
                       : "var(--chart-volume)"
                   }
                   opacity={dimmed ? 0.15 : 1}
@@ -258,7 +258,7 @@ export function NetworkDiagram() {
             width="10"
             height="10"
             rx="2.5"
-            fill="var(--violet-950)"
+            fill="var(--text-on-accent)"
           />
           <text
             x={CENTER.x}
@@ -288,7 +288,7 @@ export function NetworkDiagram() {
                 r="7"
                 fill="var(--bg-raised)"
                 stroke={
-                  active === node.id ? "var(--violet-400)" : "var(--border-strong)"
+                  active === node.id ? "var(--accent-hover)" : "var(--border-strong)"
                 }
                 strokeWidth="1.5"
                 style={{ transition: "stroke 300ms" }}
@@ -298,7 +298,7 @@ export function NetworkDiagram() {
                 cy={node.y}
                 r="2.5"
                 fill={
-                  active === node.id ? "var(--violet-300)" : "var(--text-faint)"
+                  active === node.id ? "var(--accent-text)" : "var(--text-faint)"
                 }
                 style={{ transition: "fill 300ms" }}
               />

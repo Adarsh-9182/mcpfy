@@ -26,7 +26,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[560px] opacity-[0.14]"
         style={{
           background:
-            "radial-gradient(52% 90% at 50% -10%, var(--violet-500), transparent 72%)",
+            "radial-gradient(52% 90% at 50% -10%, var(--accent), transparent 72%)",
         }}
       />
       <div

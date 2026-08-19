@@ -6,7 +6,7 @@ export function Logo({ size = 20 }: { size?: number }) {
       aria-hidden="true"
     >
       <span
-        className="rounded-[2px] bg-[var(--violet-950)]"
+        className="rounded-[2px] bg-[var(--text-on-accent)]"
         style={{ width: size * 0.35, height: size * 0.35 }}
       />
     </span>
