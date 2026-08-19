@@ -5,13 +5,9 @@ import type { Route } from "next";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@mcpfy/db/client";
 import { AuthorizationError, requireRole } from "@mcpfy/db";
-import {
-  createCheckoutSession,
-  createPortalSession,
-  type PlanId,
-} from "@mcpfy/billing";
+import type { PlanId } from "@mcpfy/billing";
 import { requireViewer } from "@/lib/session";
-import { stripeConfig } from "@/lib/billing";
+import { billingProvider } from "@/lib/billing";
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -36,9 +32,9 @@ export async function startCheckoutAction(
     throw e;
   }
 
-  const config = stripeConfig();
-  if (!config) {
-    return { error: "Stripe is not configured on this deployment." };
+  const provider = billingProvider();
+  if (!provider) {
+    return { error: "No payment provider is configured on this deployment." };
   }
 
   const plan = String(formData.get("plan") ?? "") as PlanId;
@@ -54,7 +50,7 @@ export async function startCheckoutAction(
 
   let url: string;
   try {
-    const session = await createCheckoutSession(config, {
+    const session = await provider.createCheckout({
       planId: plan,
       organizationId: viewer.tenant.organizationId,
       organizationName: viewer.organization.name,
@@ -65,8 +61,8 @@ export async function startCheckoutAction(
     });
     url = session.url;
   } catch (e) {
-    // Stripe's own message is more useful than anything generic we could
-    // substitute — it names the price id or the key that is wrong.
+    // The provider's own message is more useful than anything generic we
+    // could substitute — it names the plan id or the key that is wrong.
     return { error: e instanceof Error ? e.message : "Checkout could not start." };
   }
 
@@ -88,8 +84,10 @@ export async function openPortalAction(
     throw e;
   }
 
-  const config = stripeConfig();
-  if (!config) return { error: "Stripe is not configured on this deployment." };
+  const provider = billingProvider();
+  if (!provider) {
+    return { error: "No payment provider is configured on this deployment." };
+  }
 
   const existing = await db()
     .select({ stripeCustomerId: schema.subscription.stripeCustomerId })
@@ -104,11 +102,17 @@ export async function openPortalAction(
 
   let url: string;
   try {
-    const session = await createPortalSession(
-      config,
+    const session = await provider.createPortal(
       customerId,
       `${appUrl()}/app/settings/billing`,
     );
+    // Razorpay has no hosted portal. Say so rather than sending someone to a
+    // page that does not exist.
+    if (!session) {
+      return {
+        error: `${provider.displayName} has no billing portal. Use "Cancel subscription" below, or email us to change plan.`,
+      };
+    }
     url = session.url;
   } catch (e) {
     return { error: e instanceof Error ? e.message : "The portal could not be opened." };

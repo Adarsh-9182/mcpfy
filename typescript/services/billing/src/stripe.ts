@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PlanId } from "./plans";
+import type { BillingProvider } from "./provider";
 
 /**
  * §31 — the Stripe seam.
@@ -74,7 +75,7 @@ export function verifyWebhook(
 
 /* ----------------------------------------------------------------- events */
 
-export interface SubscriptionChange {
+export interface StripeSubscriptionChange {
   kind: "subscription";
   customerId: string;
   subscriptionId: string;
@@ -85,18 +86,10 @@ export interface SubscriptionChange {
   cancelAtPeriodEnd: boolean;
 }
 
-export interface SubscriptionEnded {
-  kind: "ended";
-  customerId: string;
-  subscriptionId: string;
-}
-
-export interface IgnoredEvent {
-  kind: "ignored";
-  reason: string;
-}
-
-export type BillingEvent = SubscriptionChange | SubscriptionEnded | IgnoredEvent;
+export type StripeEvent =
+  | StripeSubscriptionChange
+  | { kind: "ended"; customerId: string; subscriptionId: string }
+  | { kind: "ignored"; reason: string };
 
 /**
  * Turns a verified Stripe event into something worth acting on.
@@ -108,7 +101,7 @@ export type BillingEvent = SubscriptionChange | SubscriptionEnded | IgnoredEvent
 export function parseEvent(
   event: unknown,
   prices: Partial<Record<PlanId, string>>,
-): BillingEvent {
+): StripeEvent {
   const body = (event ?? {}) as Record<string, any>;
   const type = String(body.type ?? "");
   const object = body.data?.object ?? {};
@@ -253,4 +246,63 @@ export async function createPortalSession(
     fetchImpl,
   );
   return { url: String(session.url) };
+}
+
+/* ------------------------------------------------------ provider adapter */
+
+/**
+ * Stripe behind the shared interface.
+ *
+ * The functions above stay exported and directly tested; this only adapts
+ * them, so the abstraction adds a layer without adding behaviour that could
+ * drift from what the tests cover.
+ */
+export function stripeProvider(
+  config: StripeConfig,
+  fetchImpl: typeof fetch = fetch,
+): BillingProvider {
+  return {
+    id: "stripe",
+    displayName: "Stripe",
+    currency: "usd",
+
+    verifyWebhook(payload, headers) {
+      return verifyWebhook(payload, headers.get("stripe-signature"), config.webhookSecret);
+    },
+
+    parseEvent(payload) {
+      let body: unknown;
+      try {
+        body = JSON.parse(payload);
+      } catch {
+        return { kind: "ignored", reason: "unparseable body" };
+      }
+
+      const event = parseEvent(body, config.prices);
+      if (event.kind !== "subscription") return event;
+
+      // The shared interface carries `active` so callers never have to know
+      // which strings each provider considers healthy.
+      return { ...event, active: isActive(event.status) };
+    },
+
+    createCheckout(request) {
+      return createCheckoutSession(config, request, fetchImpl);
+    },
+
+    async createPortal(customerId, returnUrl) {
+      return createPortalSession(config, customerId, returnUrl, fetchImpl);
+    },
+
+    async cancelSubscription(subscriptionId) {
+      // Stripe's portal normally handles this; the interface requires it, and
+      // a caller without a portal should still be able to cancel.
+      await post(
+        config,
+        `/subscriptions/${subscriptionId}`,
+        { cancel_at_period_end: "true" },
+        fetchImpl,
+      );
+    },
+  };
 }

@@ -9,8 +9,15 @@ import {
   parseEvent,
   planForPrice,
   verifyWebhook,
+  stripeProvider,
   type StripeConfig,
 } from "./stripe";
+import {
+  isRazorpayActive,
+  parseRazorpayEvent,
+  razorpayProvider,
+  verifyRazorpayWebhook,
+} from "./razorpay";
 
 const usage = (over: Partial<Usage> = {}): Usage => ({
   servers: 0,
@@ -309,5 +316,145 @@ describe("checkout", () => {
       () => createCheckoutSession(config, request, fetchImpl),
       /No such price/,
     );
+  });
+});
+
+/* ---------------------------------------------------------------- razorpay */
+
+describe("razorpay webhooks", () => {
+  const SECRET = "rzp_whsec";
+  const sign = (payload: string, secret = SECRET) =>
+    createHmac("sha256", secret).update(payload, "utf8").digest("hex");
+
+  test("accepts a signature it can reproduce", () => {
+    const payload = '{"event":"subscription.activated"}';
+    assert.deepEqual(
+      verifyRazorpayWebhook(payload, sign(payload), SECRET),
+      { ok: true },
+    );
+  });
+
+  test("refuses a forged body", () => {
+    const signed = sign('{"event":"a"}');
+    assert.equal(verifyRazorpayWebhook('{"event":"b"}', signed, SECRET).ok, false);
+  });
+
+  test("fails closed with no secret", () => {
+    const payload = "{}";
+    assert.equal(verifyRazorpayWebhook(payload, sign(payload), "").ok, false);
+  });
+
+  test("a short signature does not throw", () => {
+    assert.equal(verifyRazorpayWebhook("{}", "ab", SECRET).ok, false);
+  });
+});
+
+describe("razorpay events", () => {
+  const plans = { hobby: "plan_hobby", startup: "plan_startup" };
+
+  const event = (over: Record<string, unknown> = {}, name = "subscription.activated") =>
+    JSON.stringify({
+      event: name,
+      payload: {
+        subscription: {
+          entity: {
+            id: "sub_rzp1",
+            customer_id: "cust_rzp1",
+            plan_id: "plan_startup",
+            status: "active",
+            current_end: 1800000000,
+            ...over,
+          },
+        },
+      },
+    });
+
+  test("reads a plan change", () => {
+    const parsed = parseRazorpayEvent(event(), plans);
+    assert.equal(parsed.kind, "subscription");
+    if (parsed.kind !== "subscription") return;
+    assert.equal(parsed.planId, "startup");
+    assert.equal(parsed.customerId, "cust_rzp1");
+    assert.equal(parsed.active, true);
+  });
+
+  test("an unknown plan maps to null rather than a guess", () => {
+    const parsed = parseRazorpayEvent(event({ plan_id: "plan_someone_else" }), plans);
+    assert.equal(parsed.kind, "subscription");
+    if (parsed.kind !== "subscription") return;
+    assert.equal(parsed.planId, null);
+  });
+
+  test("cancellation is its own event", () => {
+    assert.equal(parseRazorpayEvent(event({}, "subscription.cancelled"), plans).kind, "ended");
+    assert.equal(parseRazorpayEvent(event({}, "subscription.completed"), plans).kind, "ended");
+  });
+
+  test("access continues while a charge is being retried, but not after it halts", () => {
+    // Same reasoning as Stripe's past_due, with Razorpay's own vocabulary.
+    assert.equal(isRazorpayActive("pending"), true);
+    assert.equal(isRazorpayActive("authenticated"), true);
+    assert.equal(isRazorpayActive("halted"), false);
+    assert.equal(isRazorpayActive("cancelled"), false);
+  });
+
+  test("unrelated and malformed payloads are ignored, not errors", () => {
+    assert.equal(parseRazorpayEvent('{"event":"payment.captured"}', plans).kind, "ignored");
+    assert.equal(parseRazorpayEvent("not json", plans).kind, "ignored");
+    assert.doesNotThrow(() => parseRazorpayEvent("{}", plans));
+  });
+});
+
+describe("providers are interchangeable", () => {
+  const stripe = stripeProvider({
+    secretKey: "sk",
+    webhookSecret: "whsec",
+    prices: { hobby: "price_hobby" },
+  });
+  const razorpay = razorpayProvider({
+    keyId: "rzp_id",
+    keySecret: "rzp_secret",
+    webhookSecret: "rzp_whsec",
+    plans: { hobby: "plan_hobby" },
+  });
+
+  test("both refuse an unsigned webhook", () => {
+    for (const provider of [stripe, razorpay]) {
+      const result = provider.verifyWebhook("{}", new Headers());
+      assert.equal(result.ok, false, provider.id);
+    }
+  });
+
+  test("both ignore an unparseable body rather than throwing", () => {
+    for (const provider of [stripe, razorpay]) {
+      assert.equal(provider.parseEvent("not json").kind, "ignored", provider.id);
+    }
+  });
+
+  test("only Stripe offers a hosted portal", async () => {
+    // Razorpay has none, so the UI must offer cancellation itself rather
+    // than linking somewhere that does not exist.
+    assert.equal(await razorpay.createPortal("cust_1", "https://x"), null);
+  });
+
+  test("each names the variable to set when a plan is unmapped", async () => {
+    await assert.rejects(
+      () =>
+        razorpay.createCheckout({
+          planId: "startup",
+          organizationId: "o",
+          organizationName: "n",
+          customerEmail: "e@x.com",
+          successUrl: "https://x",
+          cancelUrl: "https://y",
+        }),
+      /RAZORPAY_PLAN_STARTUP/,
+    );
+  });
+
+  test("currency and display name differ, so the UI can say who charged you", () => {
+    assert.equal(stripe.currency, "usd");
+    assert.equal(razorpay.currency, "inr");
+    assert.notEqual(stripe.displayName, razorpay.displayName);
   });
 });

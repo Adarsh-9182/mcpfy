@@ -7,11 +7,13 @@ import {
   isActive,
   meters,
   planOf,
+  razorpayProvider,
+  stripeProvider,
   type Action,
+  type BillingProvider,
   type Decision,
   type Meter,
   type Plan,
-  type StripeConfig,
   type Usage,
 } from "@mcpfy/billing";
 
@@ -118,20 +120,46 @@ export async function allows(
 
 /* ------------------------------------------------------------------ stripe */
 
-/** Null when Stripe is not configured, so callers can degrade rather than throw. */
-export function stripeConfig(): StripeConfig | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secretKey || !webhookSecret) return null;
+/**
+ * Whichever payment provider this deployment is configured for.
+ *
+ * Null when neither is, so every caller degrades to "upgrading is
+ * unavailable" rather than throwing. Razorpay is checked first: a deployment
+ * that has configured it has done so deliberately, and it is the one that
+ * works for an Indian business without a foreign entity.
+ */
+export function billingProvider(): BillingProvider | null {
+  const razorpayId = process.env.RAZORPAY_KEY_ID;
+  const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+  const razorpayWebhook = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-  return {
-    secretKey,
-    webhookSecret,
-    prices: {
-      hobby: process.env.STRIPE_PRICE_HOBBY,
-      startup: process.env.STRIPE_PRICE_STARTUP,
-    },
-  };
+  if (razorpayId && razorpaySecret && razorpayWebhook) {
+    return razorpayProvider({
+      keyId: razorpayId,
+      keySecret: razorpaySecret,
+      webhookSecret: razorpayWebhook,
+      plans: {
+        hobby: process.env.RAZORPAY_PLAN_HOBBY,
+        startup: process.env.RAZORPAY_PLAN_STARTUP,
+      },
+    });
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeWebhook = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (stripeKey && stripeWebhook) {
+    return stripeProvider({
+      secretKey: stripeKey,
+      webhookSecret: stripeWebhook,
+      prices: {
+        hobby: process.env.STRIPE_PRICE_HOBBY,
+        startup: process.env.STRIPE_PRICE_STARTUP,
+      },
+    });
+  }
+
+  return null;
 }
 
 /**

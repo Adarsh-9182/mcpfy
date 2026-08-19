@@ -6,7 +6,7 @@ import { db, schema } from "@mcpfy/db/client";
 import { hasRole } from "@mcpfy/db";
 import { PLAN_ORDER, PLANS, formatPrice, isUpgrade } from "@mcpfy/billing";
 import { requireViewer } from "@/lib/session";
-import { billingFor, stripeConfig } from "@/lib/billing";
+import { billingFor, billingProvider } from "@/lib/billing";
 import { PlanActions } from "./plan-actions";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -16,7 +16,7 @@ const nf = new Intl.NumberFormat("en");
 export default async function BillingPage() {
   const viewer = await requireViewer("/app/settings/billing");
   const billing = await billingFor(viewer.tenant);
-  const configured = stripeConfig() !== null;
+  const provider = billingProvider();
   const canManage = hasRole(viewer.tenant, "admin");
 
   const history = await db()
@@ -51,6 +51,11 @@ export default async function BillingPage() {
               ) : null}
             </p>
             <p className="mt-1 text-base text-muted">{billing.plan.blurb}</p>
+            {provider ? (
+              <p className="mt-1.5 text-2xs text-faint">
+                Billed through {provider.displayName}
+              </p>
+            ) : null}
             {billing.currentPeriodEnd ? (
               <p className="mt-1.5 font-mono text-2xs text-faint">
                 {billing.cancelAtPeriodEnd ? "Access until" : "Renews"}{" "}
@@ -61,7 +66,7 @@ export default async function BillingPage() {
           <PlanActions
             currentPlan={billing.plan.id}
             hasCustomer={Boolean(billing.stripeCustomerId)}
-            configured={configured}
+            configured={provider !== null}
             canManage={canManage}
           />
         </div>
@@ -184,13 +189,13 @@ export default async function BillingPage() {
         </>
       ) : null}
 
-      {!configured ? (
+      {!provider ? (
         <p className="mt-6 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3 text-2xs leading-relaxed text-muted">
-          Stripe is not configured on this deployment, so upgrading is
-          unavailable and everyone is on the Free plan. Limits are still
-          enforced. Set <code className="font-mono">STRIPE_SECRET_KEY</code>,{" "}
-          <code className="font-mono">STRIPE_WEBHOOK_SECRET</code> and the price
-          ids to turn it on —{" "}
+          No payment provider is configured on this deployment, so upgrading
+          is unavailable and everyone is on the Free plan. Limits are still
+          enforced. Set either the{" "}
+          <code className="font-mono">RAZORPAY_*</code> or{" "}
+          <code className="font-mono">STRIPE_*</code> variables to turn it on —{" "}
           <Link href="/pricing" className="text-accent-text hover:underline">
             see the plans
           </Link>

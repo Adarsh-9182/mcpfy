@@ -8,14 +8,32 @@ export {
   type Meter,
   type Usage,
 } from "./entitlements";
+export type {
+  BillingEvent,
+  BillingProvider,
+  CheckoutRequest,
+  IgnoredEvent,
+  ProviderId,
+  SubscriptionChange,
+  SubscriptionEnded,
+  VerifyResult,
+} from "./provider";
 export {
   createCheckoutSession,
   createPortalSession,
   isActive,
   parseEvent,
   planForPrice,
+  stripeProvider,
   verifyWebhook,
-  type BillingEvent,
   type StripeConfig,
-  type SubscriptionChange,
+  type StripeEvent,
 } from "./stripe";
+export {
+  isRazorpayActive,
+  parseRazorpayEvent,
+  planForRazorpayPlan,
+  razorpayProvider,
+  verifyRazorpayWebhook,
+  type RazorpayConfig,
+} from "./razorpay";
