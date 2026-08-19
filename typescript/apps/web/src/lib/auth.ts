@@ -3,7 +3,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { db, schema } from "@mcpfy/db/client";
-import { env, githubConfigured } from "./env";
+import { env, githubConfigured, googleConfigured } from "./env";
+import { resetPasswordEmail, sendEmail, verifyEmailEmail } from "./email";
 
 /**
  * §24 — authentication.
@@ -31,18 +32,50 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 12,
     autoSignIn: true,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    async sendResetPassword({ user, url }) {
+      await sendEmail(resetPasswordEmail(user.email, url));
+    },
   },
-  socialProviders: githubConfigured
-    ? {
-        github: {
-          clientId: env.GITHUB_CLIENT_ID!,
-          clientSecret: env.GITHUB_CLIENT_SECRET!,
-          // Requested up front so repository import (§10) does not need a
-          // second consent round trip later.
-          scope: ["read:user", "user:email", "repo"],
-        },
-      }
-    : {},
+
+  /**
+   * Verification is sent but not enforced.
+   *
+   * Blocking sign-in on it would strand anyone whose mail is slow or filtered
+   * behind a wall they cannot climb, on a product they have not yet decided
+   * to trust. The address is confirmed for the things that need it —
+   * security notices, password reset — and the door stays open.
+   */
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 60 * 60 * 24,
+    async sendVerificationEmail({ user, url }) {
+      await sendEmail(verifyEmailEmail(user.email, url));
+    },
+  },
+
+  socialProviders: {
+    ...(githubConfigured
+      ? {
+          github: {
+            clientId: env.GITHUB_CLIENT_ID!,
+            clientSecret: env.GITHUB_CLIENT_SECRET!,
+            // Requested up front so repository import (§10) does not need a
+            // second consent round trip later.
+            scope: ["read:user", "user:email", "repo"],
+          },
+        }
+      : {}),
+    ...(googleConfigured
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID!,
+            clientSecret: env.GOOGLE_CLIENT_SECRET!,
+          },
+        }
+      : {}),
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,

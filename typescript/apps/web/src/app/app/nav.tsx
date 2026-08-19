@@ -15,7 +15,11 @@ import { authClient } from "@/lib/auth-client";
  */
 type NavItem =
   | {
-      href: "/app" | "/app/servers" | "/app/settings/api-keys";
+      href:
+        | "/app"
+        | "/app/servers"
+        | "/app/settings/api-keys"
+        | "/app/settings/sessions";
       label: string;
       exact?: boolean;
     }
@@ -58,8 +62,9 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: "Settings",
     items: [
-      { label: "Team", phase: "Phase 7" },
       { href: "/app/settings/api-keys", label: "API keys" },
+      { href: "/app/settings/sessions", label: "Sessions" },
+      { label: "Team", phase: "Phase 7" },
     ],
   },
 ];

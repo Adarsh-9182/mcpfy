@@ -15,6 +15,10 @@ const schema = z.object({
     .min(1, "SECRET_ENCRYPTION_KEY is required to store deployment secrets"),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
 });
 
 function load() {
@@ -34,9 +38,17 @@ function load() {
 export const env = load();
 
 /**
- * §10 — GitHub import is only offered when the app is actually configured for
- * it. The UI reads this instead of rendering a button that cannot work.
+ * Which sign-in methods are actually usable.
+ *
+ * The UI reads these rather than rendering a button that cannot work. A
+ * "Continue with Google" that 500s because a secret is missing is worse than
+ * no button at all — it looks like the product is broken rather than
+ * unconfigured.
  */
 export const githubConfigured = Boolean(
   env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET,
+);
+
+export const googleConfigured = Boolean(
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET,
 );
