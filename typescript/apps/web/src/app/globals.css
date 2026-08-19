@@ -54,6 +54,14 @@ body {
   100% { transform: translateY(56px); opacity: 0; }
 }
 
+/* Cards drift rather than bob: a small, slow, uneven path reads as floating,
+   while a symmetric up-down reads as a loading spinner. */
+@keyframes mcpfy-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33%      { transform: translate3d(3px, -7px, 0); }
+  66%      { transform: translate3d(-2px, -3px, 0); }
+}
+
 @keyframes mcpfy-sweep {
   from { transform: translateX(-100%); }
   to { transform: translateX(300%); }

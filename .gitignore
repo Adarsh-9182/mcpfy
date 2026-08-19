@@ -42,3 +42,4 @@ next-env.d.ts
 # Embedded PostgreSQL dev cluster
 .pgdev/
 .pgpass-init
+.gstack/
