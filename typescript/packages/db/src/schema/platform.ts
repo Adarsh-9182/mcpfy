@@ -147,3 +147,66 @@ export const webhookDelivery = pgTable(
   },
   (t) => [index("webhook_delivery_webhook_at_idx").on(t.webhookId, t.at)],
 );
+
+/**
+ * §31 — what an organization is paying for.
+ *
+ * One row per organization, created lazily on first upgrade. Its absence
+ * means the free plan, so nothing has to backfill a row for every signup and
+ * a missing record can never lock anyone out.
+ *
+ * The plan is stored here rather than read from Stripe on each request:
+ * an entitlement check happens on every server creation and every page load,
+ * and none of those should depend on a third party being reachable.
+ */
+export const subscription = pgTable(
+  "subscription",
+  {
+    id: primaryId(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** free | hobby | startup | enterprise. Validated by the billing service. */
+    plan: text("plan").notNull().default("free"),
+    /** Stripe's status, kept verbatim so it can be shown without translation. */
+    status: text("status").notNull().default("active"),
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    cancelAtPeriodEnd: integer("cancel_at_period_end").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("subscription_org_idx").on(t.organizationId),
+    index("subscription_stripe_customer_idx").on(t.stripeCustomerId),
+  ],
+);
+
+/**
+ * §31 — a record of every billing event that changed something.
+ *
+ * Append-only. When a customer asks why their plan changed, the answer has to
+ * come from somewhere other than a Stripe dashboard neither of you can read
+ * together.
+ */
+export const billingEvent = pgTable(
+  "billing_event",
+  {
+    id: primaryId(),
+    organizationId: text("organization_id").references(() => organization.id, {
+      onDelete: "cascade",
+    }),
+    stripeEventId: text("stripe_event_id"),
+    type: text("type").notNull(),
+    fromPlan: text("from_plan"),
+    toPlan: text("to_plan"),
+    detail: jsonb("detail").$type<Record<string, unknown>>(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Stripe retries deliveries; the id makes replays a no-op rather than a
+    // duplicate plan change.
+    uniqueIndex("billing_event_stripe_idx").on(t.stripeEventId),
+    index("billing_event_org_at_idx").on(t.organizationId, t.at),
+  ],
+);

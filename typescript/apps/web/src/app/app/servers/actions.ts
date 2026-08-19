@@ -17,6 +17,7 @@ import {
 } from "@mcpfy/deployment";
 import { startDeployment, cancelDeployment, DeployError } from "@/lib/deploy";
 import { probeHealth } from "@/lib/health";
+import { allows } from "@/lib/billing";
 
 export interface CreateServerState {
   error?: string;
@@ -56,6 +57,19 @@ export async function createServerAction(
   } catch (e) {
     if (e instanceof AuthorizationError) return { error: e.message };
     throw e;
+  }
+
+  // §31 — checked before any work is done, so someone at their limit is told
+  // immediately rather than after a repository has been cloned.
+  const entitlement = await allows(viewer.tenant, { kind: "create_server" });
+  if (!entitlement.allowed) {
+    return {
+      error:
+        entitlement.reason +
+        (entitlement.upgradeTo
+          ? ` The ${entitlement.upgradeTo} plan raises it — see Settings → Billing.`
+          : ""),
+    };
   }
 
   const parsed = CreateServer.safeParse({

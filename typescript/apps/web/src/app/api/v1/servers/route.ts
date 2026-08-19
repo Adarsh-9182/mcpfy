@@ -11,6 +11,7 @@ import {
   type RepositoryInspection,
 } from "@mcpfy/deployment";
 import { ensureDefaultProject } from "@/lib/projects";
+import { allows } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,16 @@ export async function POST(request: Request) {
       return apiError(403, "forbidden", e.message);
     }
     throw e;
+  }
+
+  // §31 — the same limit the dashboard enforces. A check that only exists on
+  // one path is not a limit, it is a suggestion: the API is the path someone
+  // reaches for precisely when the UI has told them no.
+  const entitlement = await allows(ctx, { kind: "create_server" });
+  if (!entitlement.allowed) {
+    return apiError(402, "plan_limit", entitlement.reason, {
+      upgrade_to: entitlement.upgradeTo,
+    });
   }
 
   let body: unknown;

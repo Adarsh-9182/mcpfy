@@ -12,6 +12,7 @@ const config: NextConfig = {
     "@mcpfy/gateway",
     "@mcpfy/readiness",
     "@mcpfy/control-mcp",
+    "@mcpfy/billing",
   ],
   typedRoutes: true,
   experimental: {

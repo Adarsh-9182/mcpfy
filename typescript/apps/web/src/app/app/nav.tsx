@@ -19,7 +19,8 @@ type NavItem =
         | "/app"
         | "/app/servers"
         | "/app/settings/api-keys"
-        | "/app/settings/sessions";
+        | "/app/settings/sessions"
+        | "/app/settings/billing";
       label: string;
       exact?: boolean;
     }
@@ -64,6 +65,7 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
     items: [
       { href: "/app/settings/api-keys", label: "API keys" },
       { href: "/app/settings/sessions", label: "Sessions" },
+      { href: "/app/settings/billing", label: "Billing" },
       { label: "Team", phase: "Phase 7" },
     ],
   },
