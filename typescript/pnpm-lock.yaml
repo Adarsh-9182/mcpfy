@@ -32,6 +32,9 @@ importers:
       '@mcpfy/inspector':
         specifier: workspace:*
         version: link:../../services/inspector
+      '@mcpfy/readiness':
+        specifier: workspace:*
+        version: link:../../services/readiness
       '@mcpfy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -288,6 +291,18 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.4.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  services/readiness:
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
