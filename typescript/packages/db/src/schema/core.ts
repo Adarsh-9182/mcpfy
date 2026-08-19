@@ -66,6 +66,40 @@ export const project = pgTable(
   (t) => [uniqueIndex("project_org_slug_idx").on(t.organizationId, t.slug)],
 );
 
+/**
+ * §35 GitHubInstallation — one row per organization that has installed the
+ * MCPfy GitHub App.
+ *
+ * The installation id is what everything else keys off: it is how MCPfy mints
+ * a token to read a repository, and it is what a webhook payload carries so a
+ * push can be traced back to an organization.
+ */
+export const githubInstallation = pgTable(
+  "github_installation",
+  {
+    id: primaryId(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** GitHub's numeric installation id. */
+    installationId: text("installation_id").notNull(),
+    /** The GitHub account the app was installed on. */
+    accountLogin: text("account_login").notNull(),
+    accountType: text("account_type").notNull().default("User"),
+    /** "all" or "selected" — whether every repo is readable. */
+    repositorySelection: text("repository_selection").notNull().default("selected"),
+    installedByUserId: text("installed_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("github_installation_external_idx").on(t.installationId),
+    index("github_installation_org_idx").on(t.organizationId),
+  ],
+);
+
 /** A connected GitHub repository. Installation id is the GitHub App install. */
 export const repository = pgTable(
   "repository",

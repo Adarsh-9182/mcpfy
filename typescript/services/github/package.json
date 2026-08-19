@@ -1,0 +1,21 @@
+{
+  "name": "@mcpfy/github",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GitHub App authentication, repository reads and webhook verification.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mcpfy/detection": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}
