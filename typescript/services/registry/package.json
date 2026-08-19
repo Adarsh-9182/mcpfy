@@ -1,0 +1,18 @@
+{
+  "name": "@mcpfy/registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Public discovery for MCP servers: search, ranking, categories and one-click client configuration.",
+  "license": "MIT",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --import tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}
