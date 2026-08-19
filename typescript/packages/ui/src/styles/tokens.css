@@ -117,6 +117,10 @@
    * for deuteranopia, against a target of 8). Volume in the accent hue with
    * errors in red separates at ΔE 21.9 for the worst case.
    */
+  /* Background word texture. Tuned per theme — the same opacity reads as
+     decoration on dark and as content on white. */
+  --drift-ink: rgb(255 255 255 / 0.055);
+
   --chart-volume: #8f7bff;
   --chart-error: #f3556c;
   --chart-grid: rgb(255 255 255 / 0.06);
@@ -179,6 +183,8 @@
     --info-surface: #ecf4fd;
     --info-border: #c6dcf6;
 
+    --drift-ink: rgb(20 20 26 / 0.045);
+
     --chart-volume: #6b52f5;
     --chart-error: #d1364d;
     --chart-grid: rgb(16 19 23 / 0.08);
@@ -232,6 +238,8 @@
   --info: #1a72d1;
   --info-surface: #ecf4fd;
   --info-border: #c6dcf6;
+
+  --drift-ink: rgb(20 20 26 / 0.045);
 
   --chart-volume: #6b52f5;
   --chart-error: #d1364d;

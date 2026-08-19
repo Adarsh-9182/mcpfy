@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
+import { THEME_SCRIPT } from "@/components/theme-toggle";
 
 const sans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -63,6 +65,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${sans.variable} ${mono.variable}`}>
+        {/*
+          Stamps data-theme from localStorage before the first paint.
+          beforeInteractive puts it in the head as a blocking script — without
+          it, a reader who chose dark gets a white flash on every load. The
+          content is a constant in this repo, never user input.
+        */}
+        <Script id="mcpfy-theme" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
         <a href="#main" className="skip-link">
           Skip to content
         </a>

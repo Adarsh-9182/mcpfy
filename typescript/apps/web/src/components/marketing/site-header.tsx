@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Button, cn } from "@mcpfy/ui";
 import { Wordmark } from "./logo";
+import { ThemeToggle } from "../theme-toggle";
 
 /**
  * A mega-menu, because the product has more surface than a row of links can
@@ -217,6 +218,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle className="hidden sm:flex" />
           <a
             href="https://github.com/mcpfyy/mcpfy"
             className="hidden items-center gap-1.5 rounded-[var(--radius-sm)] border border-line-default px-2.5 py-1.5 font-mono text-2xs text-muted transition-colors hover:border-line-strong hover:text-fg sm:flex"

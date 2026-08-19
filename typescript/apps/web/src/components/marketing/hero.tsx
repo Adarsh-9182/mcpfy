@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@mcpfy/ui";
 import { NetworkDiagram } from "./network";
+import { DriftingWords } from "./drifting-words";
 import { CopyPrompt } from "./copy-prompt";
 
 const STATS = [
@@ -41,6 +42,8 @@ export function Hero() {
             "radial-gradient(70% 55% at 50% 0%, #000 20%, transparent 78%)",
         }}
       />
+
+      <DriftingWords />
 
       <div className="relative mx-auto max-w-[1180px] px-6 pb-14 pt-14 lg:px-8 lg:pb-16 lg:pt-16">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-8">

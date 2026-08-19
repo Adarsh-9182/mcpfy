@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { getViewer } from "@/lib/session";
 import { Wordmark } from "@/components/marketing/logo";
 import { CommandHint, DashboardCommands, DashboardNav } from "./nav";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { AccountMenu } from "./account-menu";
 
 export default async function AppLayout({
@@ -56,6 +57,7 @@ export default async function AppLayout({
             </span>
             <div className="ml-auto flex items-center gap-2">
               <CommandHint />
+              <ThemeToggle className="hidden sm:flex" />
               <AccountMenu
                 name={viewer.user.name}
                 email={viewer.user.email}

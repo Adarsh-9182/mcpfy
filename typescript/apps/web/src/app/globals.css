@@ -62,6 +62,25 @@ body {
   66%      { transform: translate3d(-2px, -3px, 0); }
 }
 
+@keyframes mcpfy-drift-0 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25%      { transform: translate3d(18px, -26px, 0); }
+  50%      { transform: translate3d(-10px, -40px, 0); }
+  75%      { transform: translate3d(-22px, -14px, 0); }
+}
+
+@keyframes mcpfy-drift-1 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33%      { transform: translate3d(-24px, -18px, 0); }
+  66%      { transform: translate3d(14px, -34px, 0); }
+}
+
+@keyframes mcpfy-drift-2 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  40%      { transform: translate3d(26px, -12px, 0); }
+  70%      { transform: translate3d(8px, -30px, 0); }
+}
+
 @keyframes mcpfy-sweep {
   from { transform: translateX(-100%); }
   to { transform: translateX(300%); }
