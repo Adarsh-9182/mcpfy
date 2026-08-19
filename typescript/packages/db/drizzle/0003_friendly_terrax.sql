@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "mcp_session_server_external_idx" ON "mcp_session" USING btree ("server_id","external_id");

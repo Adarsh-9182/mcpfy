@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Badge, CodeBlock, Tabs } from "@mcpfy/ui";
 
 /**
@@ -18,13 +19,21 @@ const CLIENTS = [
 
 type Client = (typeof CLIENTS)[number]["value"];
 
+const KEY_PLACEHOLDER = "MCPFY_API_KEY";
+
 function snippetFor(client: Client, name: string, endpoint: string) {
+  const auth = { Authorization: `Bearer ${KEY_PLACEHOLDER}` };
+
   switch (client) {
     case "claude":
       return {
         filename: "claude_desktop_config.json",
         code: JSON.stringify(
-          { mcpServers: { [name]: { type: "http", url: endpoint } } },
+          {
+            mcpServers: {
+              [name]: { type: "http", url: endpoint, headers: auth },
+            },
+          },
           null,
           2,
         ),
@@ -33,7 +42,7 @@ function snippetFor(client: Client, name: string, endpoint: string) {
       return {
         filename: ".cursor/mcp.json",
         code: JSON.stringify(
-          { mcpServers: { [name]: { url: endpoint } } },
+          { mcpServers: { [name]: { url: endpoint, headers: auth } } },
           null,
           2,
         ),
@@ -42,7 +51,11 @@ function snippetFor(client: Client, name: string, endpoint: string) {
       return {
         filename: ".vscode/mcp.json",
         code: JSON.stringify(
-          { servers: { [name]: { type: "http", url: endpoint } } },
+          {
+            servers: {
+              [name]: { type: "http", url: endpoint, headers: auth },
+            },
+          },
           null,
           2,
         ),
@@ -50,7 +63,8 @@ function snippetFor(client: Client, name: string, endpoint: string) {
     case "cli":
       return {
         filename: "terminal",
-        code: `npx mcpfy-proxy --url ${endpoint}`,
+        code: `npx mcpfy-proxy --url ${endpoint} \\
+  --header "Authorization: Bearer ${KEY_PLACEHOLDER}"`,
       };
   }
 }
@@ -58,9 +72,15 @@ function snippetFor(client: Client, name: string, endpoint: string) {
 export function ConnectPanel({
   serverName,
   endpoint,
+  gatewayUrl,
+  hasApiKey,
 }: {
   serverName: string;
+  /** The raw deployment endpoint, shown for reference only. */
   endpoint: string | null;
+  /** The stable URL clients should actually use. */
+  gatewayUrl: string;
+  hasApiKey: boolean;
 }) {
   const [client, setClient] = React.useState<Client>("claude");
 
@@ -80,18 +100,41 @@ export function ConnectPanel({
     );
   }
 
-  const snippet = snippetFor(client, serverName, endpoint);
+  // Clients are given the gateway URL, never the deployment endpoint. The
+  // gateway survives redeploys, authenticates the caller and records the
+  // traffic; the raw endpoint does none of those and moves on every deploy.
+  const snippet = snippetFor(client, serverName, gatewayUrl);
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
         <div className="min-w-0">
           <p className="text-2xs font-medium uppercase tracking-wider text-faint">
-            MCP endpoint
+            Gateway URL
           </p>
-          <p className="mt-1 truncate font-mono text-base text-hi">{endpoint}</p>
+          <p className="mt-1 truncate font-mono text-base text-hi">
+            {gatewayUrl}
+          </p>
+          <p className="mt-1.5 truncate font-mono text-2xs text-faint">
+            routes to {endpoint}
+          </p>
         </div>
       </div>
+
+      {!hasApiKey ? (
+        <div className="border-b border-line bg-warning-surface px-4 py-2.5">
+          <p className="text-2xs leading-relaxed text-warning">
+            The gateway requires an API key.{" "}
+            <Link
+              href="/app/settings/api-keys"
+              className="underline underline-offset-2"
+            >
+              Create one
+            </Link>{" "}
+            and put it where the snippet says {KEY_PLACEHOLDER}.
+          </p>
+        </div>
+      ) : null}
 
       <div className="px-4 pt-3">
         <Tabs

@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 import { environment, server } from "./core";
@@ -58,6 +59,12 @@ export const mcpSession = pgTable(
   (t) => [
     index("mcp_session_server_started_idx").on(t.serverId, t.startedAt),
     index("mcp_session_org_started_idx").on(t.organizationId, t.startedAt),
+    /*
+     * The natural key for a session. A client's session id is only unique
+     * within the server that issued it, so keying on it alone would merge two
+     * customers' conversations that happened to collide.
+     */
+    uniqueIndex("mcp_session_server_external_idx").on(t.serverId, t.externalId),
   ],
 );
 

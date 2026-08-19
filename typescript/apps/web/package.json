@@ -24,7 +24,8 @@
     "server-only": "^0.0.1",
     "@mcpfy/deployment": "workspace:*",
     "@mcpfy/detection": "workspace:*",
-    "@mcpfy/inspector": "workspace:*"
+    "@mcpfy/inspector": "workspace:*",
+    "@mcpfy/gateway": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

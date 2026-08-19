@@ -180,3 +180,94 @@ export async function getServerTools(ctx: TenantContext, serverId: string) {
     .where(scoped(ctx, schema.tool, eq(schema.tool.serverId, serverId)))
     .orderBy(schema.tool.name);
 }
+
+export interface ServerTraffic {
+  requests: number;
+  toolCalls: number;
+  errorRate: number | null;
+  p95LatencyMs: number | null;
+  /** True when this server has never been called through the gateway. */
+  neverCalled: boolean;
+}
+
+/**
+ * §22 — one server's traffic over the last 24 hours.
+ *
+ * Reads from what the gateway actually recorded. When nothing has been
+ * recorded the caller is told so explicitly rather than being handed zeroes,
+ * because "no traffic yet" and "traffic, all of it zero" are different facts
+ * and only one of them is a problem.
+ */
+export async function serverTraffic(
+  ctx: TenantContext,
+  serverId: string,
+): Promise<ServerTraffic> {
+  const since = new Date(Date.now() - DAY_MS);
+
+  const [window] = await db()
+    .select({
+      requests: count(),
+      errors: sql<number>`count(*) filter (where ${schema.requestLog.outcome} <> 'ok')`,
+      p95: sql<
+        number | null
+      >`percentile_disc(0.95) within group (order by ${schema.requestLog.durationMs})`,
+    })
+    .from(schema.requestLog)
+    .where(
+      scoped(
+        ctx,
+        schema.requestLog,
+        and(eq(schema.requestLog.serverId, serverId), gte(schema.requestLog.at, since)),
+      ),
+    );
+
+  const [tools] = await db()
+    .select({ n: count() })
+    .from(schema.toolCall)
+    .where(
+      scoped(
+        ctx,
+        schema.toolCall,
+        and(eq(schema.toolCall.serverId, serverId), gte(schema.toolCall.at, since)),
+      ),
+    );
+
+  const [ever] = await db()
+    .select({ n: count() })
+    .from(schema.requestLog)
+    .where(scoped(ctx, schema.requestLog, eq(schema.requestLog.serverId, serverId)));
+
+  const requests = Number(window?.requests ?? 0);
+
+  return {
+    requests,
+    toolCalls: Number(tools?.n ?? 0),
+    errorRate: requests === 0 ? null : Number(window?.errors ?? 0) / requests,
+    p95LatencyMs: window?.p95 == null ? null : Math.round(Number(window.p95)),
+    neverCalled: Number(ever?.n ?? 0) === 0,
+  };
+}
+
+/** §22 — per-tool breakdown, which is what §14's registry page needs. */
+export async function toolBreakdown(ctx: TenantContext, serverId: string) {
+  const since = new Date(Date.now() - DAY_MS);
+  return db()
+    .select({
+      toolName: schema.toolCall.toolName,
+      calls: count(),
+      errors: sql<number>`count(*) filter (where ${schema.toolCall.outcome} <> 'ok')`,
+      p95: sql<
+        number | null
+      >`percentile_disc(0.95) within group (order by ${schema.toolCall.durationMs})`,
+    })
+    .from(schema.toolCall)
+    .where(
+      scoped(
+        ctx,
+        schema.toolCall,
+        and(eq(schema.toolCall.serverId, serverId), gte(schema.toolCall.at, since)),
+      ),
+    )
+    .groupBy(schema.toolCall.toolName)
+    .orderBy(desc(count()));
+}

@@ -14,7 +14,11 @@ import { authClient } from "@/lib/auth-client";
  * built without hiding where it is going (§48: no dead buttons).
  */
 type NavItem =
-  | { href: "/app" | "/app/servers"; label: string; exact?: boolean }
+  | {
+      href: "/app" | "/app/servers" | "/app/settings/api-keys";
+      label: string;
+      exact?: boolean;
+    }
   | { label: string; phase: string };
 
 /** Features that exist but only inside a server, so there is no org-wide page. */
@@ -54,8 +58,8 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: "Settings",
     items: [
-      { label: "Team", phase: "Phase 6" },
-      { label: "API keys", phase: "Phase 6" },
+      { label: "Team", phase: "Phase 7" },
+      { href: "/app/settings/api-keys", label: "API keys" },
     ],
   },
 ];
@@ -148,6 +152,13 @@ export function DashboardCommands() {
       label: "Go to overview",
       group: "Navigate",
       run: () => router.push("/app"),
+    },
+    {
+      id: "api-keys",
+      label: "Manage API keys",
+      group: "Settings",
+      keywords: "token credential gateway",
+      run: () => router.push("/app/settings/api-keys"),
     },
     {
       id: "docs",

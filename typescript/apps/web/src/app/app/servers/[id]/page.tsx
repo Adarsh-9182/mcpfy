@@ -16,8 +16,18 @@ import {
   getServerDeployments,
   getServerEnvironments,
   getServerTools,
+  serverTraffic,
 } from "@/lib/servers";
-import { STATUS_LABEL } from "@mcpfy/db";
+
+const nf = new Intl.NumberFormat("en", { notation: "compact" });
+import { count, isNull } from "drizzle-orm";
+import { db, schema } from "@mcpfy/db/client";
+import { scoped, STATUS_LABEL } from "@mcpfy/db";
+
+/** The public origin clients will connect to. */
+function appUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
 import { ConnectPanel } from "./connect-panel";
 import { HealthBadge } from "./health-badge";
 import { DeployButton } from "./deploy-button";
@@ -57,8 +67,9 @@ export default async function ServerPage({
     await probeHealth(viewer.tenant, server.id).catch(() => {});
   }
 
-  const [fresh, environments, deployments, tools] = await Promise.all([
+  const [fresh, traffic, environments, deployments, tools] = await Promise.all([
     getServer(viewer.tenant, server.id),
+    serverTraffic(viewer.tenant, server.id),
     getServerEnvironments(viewer.tenant, server.id),
     getServerDeployments(viewer.tenant, server.id),
     getServerTools(viewer.tenant, server.id),
@@ -68,6 +79,14 @@ export default async function ServerPage({
 
   const production = environments.find((e) => e.kind === "production");
   const endpoint = production?.endpointUrl ?? null;
+
+  const keyCounts = await db()
+    .select({ count: count() })
+    .from(schema.apiKey)
+    .where(
+      scoped(viewer.tenant, schema.apiKey, isNull(schema.apiKey.revokedAt)),
+    );
+  const apiKeyCount = Number(keyCounts[0]?.count ?? 0);
 
   return (
     <>
@@ -123,7 +142,12 @@ export default async function ServerPage({
         </div>
       </div>
 
-      <ConnectPanel serverName={server.slug} endpoint={endpoint} />
+      <ConnectPanel
+        serverName={server.slug}
+        endpoint={endpoint}
+        gatewayUrl={`${appUrl()}/g/${viewer.organization.slug}/${server.slug}/mcp`}
+        hasApiKey={apiKeyCount > 0}
+      />
 
       <DetectionPanel
         detection={server.detection}
@@ -134,18 +158,63 @@ export default async function ServerPage({
       />
 
       {/*
-        No metric tiles here yet. Tiles that link nowhere are exactly the dead
-        UI §48 rules out, and the analytics routes they would point at arrive
-        in Phase 4. Until traffic exists, saying so is the honest surface.
+        Real numbers now, from what the gateway recorded. When a server has
+        never been called we say exactly that instead of printing zeroes —
+        "no traffic yet" and "traffic, all of it zero" are different facts,
+        and only one of them means something is wrong.
       */}
-      <div className="mt-4 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3.5">
-        <p className="text-base font-medium text-hi">No traffic recorded</p>
-        <p className="mt-1 text-2xs leading-relaxed text-muted">
-          Requests, tool calls, latency percentiles and error rates appear once
-          MCP traffic reaches this server through the gateway. Nothing is
-          routed through it yet.
-        </p>
-      </div>
+      {traffic.neverCalled ? (
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-line bg-surface px-4 py-3.5">
+          <p className="text-base font-medium text-hi">No traffic yet</p>
+          <p className="mt-1 text-2xs leading-relaxed text-muted">
+            Requests, tool calls, latency and error rates appear here once a
+            client connects through the gateway URL above.
+          </p>
+        </div>
+      ) : (
+        <>
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Requests", value: nf.format(traffic.requests), tone: "" },
+              { label: "Tool calls", value: nf.format(traffic.toolCalls), tone: "" },
+              {
+                label: "Error rate",
+                value:
+                  traffic.errorRate === null
+                    ? "—"
+                    : `${(traffic.errorRate * 100).toFixed(2)}%`,
+                tone:
+                  traffic.errorRate !== null && traffic.errorRate > 0.01
+                    ? "text-danger"
+                    : "text-success",
+              },
+              {
+                label: "p95 latency",
+                value:
+                  traffic.p95LatencyMs === null
+                    ? "—"
+                    : `${traffic.p95LatencyMs}ms`,
+                tone: "",
+              },
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-[var(--radius-lg)] border border-line bg-surface p-4"
+              >
+                <dt className="text-2xs font-medium uppercase tracking-wider text-subtle">
+                  {metric.label}
+                </dt>
+                <dd
+                  className={`mt-1 font-mono text-2xl tabular-nums ${metric.tone || "text-hi"}`}
+                >
+                  {metric.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-2xs text-faint">Last 24 hours, via the gateway.</p>
+        </>
+      )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>
