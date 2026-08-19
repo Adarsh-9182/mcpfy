@@ -194,6 +194,31 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/mcpfy-audit:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.29.0
+        version: 1.29.0(zod@4.4.3)
+    devDependencies:
+      '@mcpfy/inspector':
+        specifier: workspace:*
+        version: link:../../services/inspector
+      '@mcpfy/readiness':
+        specifier: workspace:*
+        version: link:../../services/readiness
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.23)(tsx@4.23.1)(typescript@5.9.3)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/mcpfy-pulse:
     devDependencies:
       '@types/node':

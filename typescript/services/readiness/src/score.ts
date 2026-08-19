@@ -86,8 +86,9 @@ function protocolChecks(input: ReadinessInput): Check[] {
       passed: connectivity.handshakeOk,
       detail: connectivity.handshakeError ?? undefined,
       remedy:
-        "The server must answer initialize over HTTP. Check that it is running, " +
-        "reachable, and serving MCP rather than a plain HTTP API.",
+        "The server must answer an initialize request. Check that it is " +
+        "running and reachable, and that it speaks MCP rather than a plain " +
+        "HTTP API — a REST endpoint will connect and then fail this.",
     }),
     check({
       id: "has-tools",

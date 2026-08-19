@@ -128,6 +128,21 @@ console.log(await session.callTool("hello"));
 
 ---
 
+## Audit any MCP server
+
+```bash
+npx mcpfy-audit https://your-server.com/mcp
+```
+
+Scores any MCP server out of 100 on protocol conformance, schema and
+description quality, and safety — and says what to fix. Works on servers that
+have nothing to do with MCPfy, needs no account, and uploads nothing.
+
+  [`typescript/packages/mcpfy-audit`](./typescript/packages/mcpfy-audit)
+
+
+---
+
 ## Platform
 
 The SDK above works standalone and always will. The hosted control plane —

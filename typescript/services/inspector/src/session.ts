@@ -11,15 +11,27 @@ import {
 
 const CLIENT_INFO = { name: "mcpfy-inspector", version: "0.1.0" };
 
-export type Transport = "streamable_http" | "sse";
+export type Transport = "streamable_http" | "sse" | "stdio";
 
 export interface ConnectOptions {
-  endpointUrl: string;
+  /** For HTTP transports. Ignored when `command` is given. */
+  endpointUrl?: string;
   transport?: Transport;
   headers?: Record<string, string>;
   /** Sent as `Authorization: Bearer …`. Kept separate so it can be redacted. */
   bearerToken?: string;
   timeoutMs?: number;
+  /**
+   * Run a local server over stdio instead of connecting over HTTP.
+   *
+   * Most MCP servers people actually write are stdio — it is what Claude
+   * Desktop's config expects — so an inspector that only speaks HTTP cannot
+   * look at the majority of them.
+   */
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
 }
 
 /** Anything the Inspector can ask a server to do. */
@@ -84,11 +96,7 @@ export async function inspect(
     headers.Authorization = `Bearer ${connect.bearerToken}`;
   }
 
-  const url = new URL(connect.endpointUrl);
-  const base =
-    connect.transport === "sse"
-      ? new SSEClientTransport(url, { requestInit: { headers } })
-      : new StreamableHTTPClientTransport(url, { requestInit: { headers } });
+  const base = await createTransport(connect, headers);
 
   const { transport, frames } = recordTransport(
     base as unknown as MinimalTransport,
@@ -143,6 +151,35 @@ export async function inspect(
   } finally {
     await client.close().catch(() => {});
   }
+}
+
+async function createTransport(
+  connect: ConnectOptions,
+  headers: Record<string, string>,
+) {
+  if (connect.command) {
+    const { StdioClientTransport } = await import(
+      "@modelcontextprotocol/sdk/client/stdio.js"
+    );
+    return new StdioClientTransport({
+      command: connect.command,
+      args: connect.args ?? [],
+      cwd: connect.cwd,
+      // Inherit the caller's environment so a server can read the API keys it
+      // needs, plus anything explicitly passed.
+      env: { ...(process.env as Record<string, string>), ...(connect.env ?? {}) },
+      stderr: "pipe",
+    });
+  }
+
+  if (!connect.endpointUrl) {
+    throw new Error("Give either an endpoint URL or a command to run.");
+  }
+
+  const url = new URL(connect.endpointUrl);
+  return connect.transport === "sse"
+    ? new SSEClientTransport(url, { requestInit: { headers } })
+    : new StreamableHTTPClientTransport(url, { requestInit: { headers } });
 }
 
 function run(client: Client, operation: Operation): Promise<unknown> {

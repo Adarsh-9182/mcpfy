@@ -1,0 +1,46 @@
+{
+  "name": "mcpfy-audit",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Audit any MCP server: protocol conformance, schema and description quality, and safety. Scores out of 100 and says what to fix. No account needed.",
+  "author": "mcpfy",
+  "license": "MIT",
+  "homepage": "https://github.com/mcpfyy/mcpfy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcpfyy/mcpfy.git",
+    "directory": "typescript/packages/mcpfy-audit"
+  },
+  "bugs": { "url": "https://github.com/mcpfyy/mcpfy/issues" },
+  "keywords": [
+    "mcp",
+    "mcpfy",
+    "model-context-protocol",
+    "audit",
+    "lint",
+    "validate",
+    "inspector",
+    "ci",
+    "cli"
+  ],
+  "bin": { "mcpfy-audit": "dist/bin.js" },
+  "exports": { ".": "./dist/audit.js" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": { "node": "^20.19.0 || >=22.12.0" },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/bin.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@mcpfy/inspector": "workspace:*",
+    "@mcpfy/readiness": "workspace:*",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}
