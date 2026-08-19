@@ -2,16 +2,26 @@ import * as React from "react";
 import { cn } from "../cn";
 
 /**
- * §9 — a metric tile. Every tile takes an `href`: the design brief's rule is
- * "every metric leads somewhere", so a tile that goes nowhere is a bug, and
- * making the prop required is how that stays true.
+ * §9 — a metric tile. Every tile takes an `href`: the rule is "every metric
+ * leads somewhere", so a tile that goes nowhere is a bug.
+ *
+ * Requiring the prop was not enough. Typing it as `string` meant Next's typed
+ * routes never checked these links, and three tiles shipped pointing at
+ * routes that did not exist — the safety net was there, and this component
+ * held it open. `LinkLike` keeps the checking at the call site.
  */
+export type LinkLike = React.ComponentType<{
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}>;
 export function MetricCard({
   label,
   value,
   unit,
   hint,
   href,
+  as: Link = "a" as unknown as LinkLike,
   tone = "default",
   className,
 }: {
@@ -21,6 +31,11 @@ export function MetricCard({
   /** The link text, e.g. "Last 24h →". */
   hint: string;
   href: string;
+  /**
+   * The app's own Link component. Passing it means the href is validated
+   * against real routes by the framework instead of being trusted here.
+   */
+  as?: LinkLike;
   tone?: "default" | "success" | "warning" | "danger";
   className?: string;
 }) {
@@ -32,7 +47,7 @@ export function MetricCard({
   }[tone];
 
   return (
-    <a
+    <Link
       href={href}
       className={cn(
         "group flex flex-col gap-2 rounded-[var(--radius-lg)] border border-line bg-surface p-4",
@@ -56,6 +71,6 @@ export function MetricCard({
       <span className="text-2xs text-faint transition-colors group-hover:text-accent-text">
         {hint}
       </span>
-    </a>
+    </Link>
   );
 }

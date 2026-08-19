@@ -49,10 +49,10 @@ const SECTIONS: { label: string | null; items: NavItem[] }[] = [
   {
     label: "Operate",
     items: [
-      { label: "Deployments", phase: "Phase 2" },
-      { label: "Logs", phase: "Phase 4" },
-      { label: "Analytics", phase: "Phase 4" },
-      { label: "Sessions", phase: "Phase 4" },
+      { label: "Deployments", phase: PER_SERVER },
+      { label: "Analytics", phase: PER_SERVER },
+      { label: "Logs", phase: "Phase 5" },
+      { label: "Sessions", phase: "Phase 5" },
     ],
   },
   {

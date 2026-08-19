@@ -33,6 +33,7 @@ export default async function OverviewPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
+          as={Link}
           label="Servers"
           value={overview.serverCount}
           hint="View all →"
@@ -43,8 +44,9 @@ export default async function OverviewPage() {
           value={
             overview.requests24h === 0 ? "—" : nf.format(overview.requests24h)
           }
-          hint="Last 24h →"
-          href="/app/analytics"
+          hint="Per server →"
+          href="/app/servers"
+          as={Link}
         />
         <MetricCard
           label="Error rate"
@@ -58,15 +60,17 @@ export default async function OverviewPage() {
               ? "danger"
               : "default"
           }
-          hint="Filtered logs →"
-          href="/app/logs?outcome=error"
+          hint="Per server →"
+          href="/app/servers"
+          as={Link}
         />
         <MetricCard
           label="p95 latency"
           value={overview.p95LatencyMs ?? "—"}
           unit={overview.p95LatencyMs === null ? undefined : "ms"}
-          hint="Analytics →"
-          href="/app/analytics"
+          hint="Per server →"
+          href="/app/servers"
+          as={Link}
         />
       </div>
 

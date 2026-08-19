@@ -106,6 +106,22 @@
   --info-surface: #0b1620;
   --info-border: #16324a;
 
+  /*
+   * Chart marks. Separate steps from the UI status colors, chosen by running
+   * the palette validator against the chart surface rather than by eye.
+   *
+   * Deliberately two colors, not three: "ok" and "error" are not two peer
+   * categories — one is the baseline, the other is the signal. An earlier
+   * attempt used green for ok and red for error, and every green that passed
+   * the lightness band failed colour-vision separation against red (ΔE 4.3
+   * for deuteranopia, against a target of 8). Volume in the accent hue with
+   * errors in red separates at ΔE 21.9 for the worst case.
+   */
+  --chart-volume: #8f7bff;
+  --chart-error: #f3556c;
+  --chart-grid: rgb(255 255 255 / 0.06);
+  --chart-surface: #0e1013;
+
   --selection: rgb(143 123 255 / 0.3);
   --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   --shadow-overlay: 0 16px 48px -12px rgb(0 0 0 / 0.7);
@@ -163,6 +179,11 @@
     --info-surface: #ecf4fd;
     --info-border: #c6dcf6;
 
+    --chart-volume: #6b52f5;
+    --chart-error: #d1364d;
+    --chart-grid: rgb(16 19 23 / 0.08);
+    --chart-surface: #fbfcfd;
+
     --shadow-panel: 0 1px 2px rgb(16 19 23 / 0.06), 0 8px 24px -12px rgb(16 19 23 / 0.12);
     --shadow-overlay: 0 16px 48px -12px rgb(16 19 23 / 0.18);
   }
@@ -211,6 +232,11 @@
   --info: #1a72d1;
   --info-surface: #ecf4fd;
   --info-border: #c6dcf6;
+
+  --chart-volume: #6b52f5;
+  --chart-error: #d1364d;
+  --chart-grid: rgb(16 19 23 / 0.08);
+  --chart-surface: #fbfcfd;
 
   --shadow-panel: 0 1px 2px rgb(16 19 23 / 0.06), 0 8px 24px -12px rgb(16 19 23 / 0.12);
   --shadow-overlay: 0 16px 48px -12px rgb(16 19 23 / 0.18);

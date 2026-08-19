@@ -30,6 +30,8 @@ export { ToastProvider, useToast } from "./components/toast";
 export { Tooltip } from "./components/tooltip";
 export { CommandMenu, type Command } from "./components/command-menu";
 export { SchemaForm } from "./components/schema-form";
+export { TrafficChart, type TrafficBucket } from "./components/traffic-chart";
+export { BarList, type BarItem } from "./components/bar-list";
 // Pure schema helpers live outside the client component on purpose — see
 // the note in schema.ts. Server components import them from here safely.
 export {

@@ -135,6 +135,12 @@ export default async function ServerPage({
           >
             Registry
           </Link>
+          <Link
+            href={`/app/servers/${server.id}/analytics`}
+            className="rounded-[var(--radius-md)] border border-line-default bg-panel px-3 py-1.5 text-base text-muted transition-colors hover:border-line-strong hover:text-fg"
+          >
+            Analytics
+          </Link>
           <DeployButton
             serverId={server.id}
             connected={Boolean(server.repositoryId)}
@@ -212,7 +218,15 @@ export default async function ServerPage({
               </div>
             ))}
           </dl>
-          <p className="mt-2 text-2xs text-faint">Last 24 hours, via the gateway.</p>
+          <p className="mt-2 text-2xs text-faint">
+            Last 24 hours, via the gateway.{" "}
+            <Link
+              href={`/app/servers/${server.id}/analytics`}
+              className="text-subtle transition-colors hover:text-accent-text"
+            >
+              Full analytics →
+            </Link>
+          </p>
         </>
       )}
 
