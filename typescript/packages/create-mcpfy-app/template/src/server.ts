@@ -7,22 +7,42 @@ const server = new MCPServer({
   description: "An MCP server built with mcpfy.",{{AUTH_CONFIG}}
 });
 
+// Describe every tool and every argument. An agent chooses which tool to call
+// by reading these — an undescribed argument is one the model has to guess at,
+// and an undescribed tool is effectively invisible however well it works.
 server.tool(
   {
     name: "add",
-    description: "Add two numbers",
-    schema: z.object({ a: z.number(), b: z.number() }),
-    outputSchema: z.object({ sum: z.number() }),
+    description: "Add two numbers together and return their sum.",
+    schema: z.object({
+      a: z.number().describe("The first number to add."),
+      b: z.number().describe("The second number to add."),
+    }),
+    outputSchema: z.object({
+      sum: z.number().describe("The sum of a and b."),
+    }),
   },
   async ({ a, b }) => object({ sum: a + b })
 );
 
-server.resource({ name: "greeting", uri: "app://greeting", title: "Greeting" }, async () =>
-  markdown("# Hello from mcpfy!")
+server.resource(
+  {
+    name: "greeting",
+    uri: "app://greeting",
+    title: "Greeting",
+    description: "A short welcome message, as markdown.",
+  },
+  async () => markdown("# Hello from mcpfy!")
 );
 
 server.prompt(
-  { name: "greet", description: "Generate a greeting", schema: z.object({ name: z.string() }) },
+  {
+    name: "greet",
+    description: "Generate a friendly greeting addressed to someone.",
+    schema: z.object({
+      name: z.string().describe("The name of the person to greet."),
+    }),
+  },
   async ({ name }) => text(`Hello, ${name}!`)
 );
 

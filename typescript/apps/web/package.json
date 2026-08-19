@@ -26,7 +26,8 @@
     "@mcpfy/detection": "workspace:*",
     "@mcpfy/inspector": "workspace:*",
     "@mcpfy/gateway": "workspace:*",
-    "@mcpfy/readiness": "workspace:*"
+    "@mcpfy/readiness": "workspace:*",
+    "@mcpfy/control-mcp": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

@@ -44,6 +44,8 @@ const client = new MCPClient({
 const session = await client.createSession("local");
 console.log(await session.callTool("search_customers", { query: "acme" }));`;
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 const CLAUDE_CONFIG = `{
   "mcpServers": {
     "customer-mcp": {
@@ -132,6 +134,34 @@ npm run dev`}
           filename="claude_desktop_config.json"
           code={CLAUDE_CONFIG}
         />
+      </Section>
+
+      <Section id="control-plane" title="Operate MCPfy from your editor">
+        <p className="text-base leading-relaxed text-muted">
+          MCPfy exposes its own control plane as an MCP server. Point Claude or
+          Cursor at it and you can deploy a server, read why a build failed and
+          audit readiness without leaving the conversation.
+        </p>
+        <CodeBlock
+          language="json"
+          filename="claude_desktop_config.json"
+          code={`{
+  "mcpServers": {
+    "mcpfy": {
+      "type": "http",
+      "url": "${APP_URL}/mcp",
+      "headers": { "Authorization": "Bearer MCPFY_API_KEY" }
+    }
+  }
+}`}
+        />
+        <p className="text-base leading-relaxed text-muted">
+          The key&rsquo;s role decides which tools appear. A viewer key lists
+          only the read tools; a developer key adds{" "}
+          <code className="font-mono text-fg">deploy_server</code>. There are no
+          destructive tools — deleting things stays in the dashboard, where a
+          person is looking at it.
+        </p>
       </Section>
 
       <Section id="platform" title="Platform">

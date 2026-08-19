@@ -11,6 +11,7 @@ const config: NextConfig = {
     "@mcpfy/inspector",
     "@mcpfy/gateway",
     "@mcpfy/readiness",
+    "@mcpfy/control-mcp",
   ],
   typedRoutes: true,
   experimental: {
