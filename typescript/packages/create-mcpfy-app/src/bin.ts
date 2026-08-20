@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline/promises";
-import { basename, relative, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename, dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { detectPackageManager, scaffold, toPackageName, type Auth, type Transport } from "./scaffold.js";
 
 interface ParsedArgs {
@@ -10,6 +12,51 @@ interface ParsedArgs {
   transport?: Transport;
   auth?: Auth;
   port?: number;
+  /** Accept every default without asking. Implied when stdin is not a TTY. */
+  yes: boolean;
+}
+
+const USAGE = `create-mcpfy-app — scaffold a working MCP server
+
+Usage: create-mcpfy-app [project-name] [options]
+
+Arguments:
+  project-name           Directory to create. May be a path. Prompted if omitted.
+
+Options:
+  --transport <t>        "stdio" (default) or "http"
+  --stdio                Shorthand for --transport stdio
+  --http                 Shorthand for --transport http
+  --auth <a>             "none" (default), "header", or "oauth"
+  --port <n>             HTTP listen port baked into the server (default: 3000)
+  --pm <manager>         Package manager to install with (default: detected)
+  --no-install           Skip installing dependencies
+  -y, --yes              Take every default without prompting
+  -h, --help             Show this help
+  -v, --version          Print the version
+
+Examples:
+  create-mcpfy-app my-server
+  create-mcpfy-app my-server --http --port 8080 --auth oauth
+  create-mcpfy-app my-server --yes --no-install
+`;
+
+/**
+ * Our own version, for --version.
+ *
+ * Read at runtime rather than inlined at build time so a locally linked
+ * checkout reports what is actually on disk. Both the built layout
+ * (dist/bin.js) and the dev layout (src/bin.ts) sit one directory below the
+ * package root.
+ */
+function ownVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8"));
+    return String(pkg.version ?? "unknown");
+  } catch {
+    return "unknown";
+  }
 }
 
 function parsePortValue(value: string | undefined, flag: string): number {
@@ -22,10 +69,18 @@ function parsePortValue(value: string | undefined, flag: string): number {
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
-  const args: ParsedArgs = { install: true };
+  const args: ParsedArgs = { install: true, yes: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--no-install") {
+    if (arg === "--help" || arg === "-h") {
+      process.stdout.write(USAGE);
+      process.exit(0);
+    } else if (arg === "--version" || arg === "-v") {
+      console.log(ownVersion());
+      process.exit(0);
+    } else if (arg === "--yes" || arg === "-y") {
+      args.yes = true;
+    } else if (arg === "--no-install") {
       args.install = false;
     } else if (arg === "--pm") {
       args.packageManager = argv[++i];
@@ -53,6 +108,16 @@ function parseArgs(argv: string[]): ParsedArgs {
       args.auth = value;
     } else if (!arg.startsWith("-") && !args.name) {
       args.name = arg;
+    } else if (arg.startsWith("-")) {
+      // Silently ignoring an unknown flag is how `--help` came to scaffold a
+      // project: the flag fell through, the name was already set, and the run
+      // continued as if nothing had been asked for. A typo like --instal
+      // deserves an error, not a surprise directory.
+      console.error(`Unknown option "${arg}". Run with --help to see the options.`);
+      process.exit(1);
+    } else {
+      console.error(`Unexpected argument "${arg}" — the project name was already given as "${args.name}".`);
+      process.exit(1);
     }
   }
   return args;
@@ -123,12 +188,32 @@ async function promptForPort(ask: (q: string) => Promise<string>): Promise<numbe
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const needsPrompt = args.name === undefined || args.transport === undefined || args.auth === undefined;
-  const prompter = needsPrompt ? createPrompter() : undefined;
 
-  const rawName = args.name ?? (await promptForName(prompter!.ask));
-  const transport = args.transport ?? (await promptForTransport(prompter!.ask));
-  const auth = args.auth ?? (await promptForAuth(prompter!.ask));
+  /**
+   * Whether we may ask questions at all.
+   *
+   * Without the TTY check, a piped or redirected stdin still ran the prompts:
+   * every `ask` resolved to "" straight away, every default was taken, and the
+   * command scaffolded a project without a single answer from anyone. That is
+   * how `create-mcpfy-app my-app --help` ended up creating a directory. In CI
+   * or under an agent there is nobody to answer, so defaults are taken — but
+   * announced, never silently.
+   */
+  const interactive = !args.yes && process.stdin.isTTY === true;
+  const missing =
+    args.name === undefined || args.transport === undefined || args.auth === undefined;
+  const prompter = interactive && missing ? createPrompter() : undefined;
+
+  const rawName = args.name ?? (prompter ? await promptForName(prompter.ask) : "my-mcp-server");
+  const transport = args.transport ?? (prompter ? await promptForTransport(prompter.ask) : "stdio");
+  const auth = args.auth ?? (prompter ? await promptForAuth(prompter.ask) : "none");
+
+  if (!prompter && missing) {
+    console.log(
+      `Running non-interactively — using defaults for anything not passed as a flag.\n` +
+        `Run with --help to set them explicitly.`,
+    );
+  }
   // Port only matters for HTTP. Prompt when interactive + http and --port wasn't given.
   let port = args.port ?? 3000;
   if (transport === "http" && args.port === undefined && prompter) {

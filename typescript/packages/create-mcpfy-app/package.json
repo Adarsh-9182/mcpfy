@@ -14,7 +14,16 @@
   "bugs": {
     "url": "https://github.com/mcpfyy/mcpfy/issues"
   },
-  "keywords": ["mcp", "mcpfy", "model-context-protocol", "create", "scaffold", "cli", "starter", "template"],
+  "keywords": [
+    "mcp",
+    "mcpfy",
+    "model-context-protocol",
+    "create",
+    "scaffold",
+    "cli",
+    "starter",
+    "template"
+  ],
   "bin": {
     "create-mcpfy-app": "dist/bin.js"
   },
@@ -23,13 +32,19 @@
     "./generate": "./dist/generate.js",
     "./scaffold": "./dist/scaffold.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
     "build": "rimraf dist && tsup && node scripts/copy-templates.mjs",
-    "dev": "tsx src/bin.ts"
+    "dev": "tsx src/bin.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
