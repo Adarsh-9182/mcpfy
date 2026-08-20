@@ -10,6 +10,22 @@ const external = [
 ];
 
 export default defineConfig([
+  // The `mcpfy` binary. ESM only, so it cannot share the dual-format build the
+  // library entries use. No banner: the source file already starts with a
+  // shebang and tsup preserves it — adding one here emitted two, and the
+  // second is a syntax error rather than a comment.
+  {
+    entry: { "src/cli/index": "src/cli/index.ts" },
+    format: ["esm"],
+    outDir: "dist",
+    platform: "node",
+    target: "es2022",
+    splitting: false,
+    sourcemap: true,
+    clean: false,
+    dts: false,
+    external,
+  },
   {
     entry: {
       "src/index": "src/index.ts",

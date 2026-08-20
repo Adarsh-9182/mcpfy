@@ -255,11 +255,11 @@ async function main(): Promise<void> {
   if (!args.install) {
     console.log(`  ${packageManager} install`);
   }
-  if (transport === "http") {
-    console.log(`  ${packageManager} run dev   # HTTP on http://localhost:${port}/mcp\n`);
-  } else {
-    console.log(`  ${packageManager} run dev   # starts with the ${transport} transport\n`);
-  }
+  console.log(`  ${packageManager} run dev   # server + inspector at http://127.0.0.1:6274`);
+  console.log("");
+  console.log(`  The inspector runs on your machine and needs no account. To run the`);
+  console.log(`  server on its own instead: ${packageManager} run dev:${transport}`);
+  console.log("");
 }
 
 main();

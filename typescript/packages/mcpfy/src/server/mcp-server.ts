@@ -31,7 +31,15 @@ export interface ListenOptions {
   port?: number;
   /** HTTP only. Defaults to "localhost". */
   host?: string;
-  /** HTTP only. Suppress the startup log line with the local URL. Defaults to false. */
+  /**
+   * HTTP only. Suppress the startup log line with the local URL.
+   *
+   * Defaults to false, or to true when `MCPFY_SILENT=1` is set. The env form
+   * exists for supervisors: `mcpfy dev` runs the server as a child on an
+   * internal port and prints its own banner, so the child announcing a port
+   * the developer must ignore is noise it cannot otherwise turn off — the
+   * entry file is theirs, and we should not require them to edit it.
+   */
   silent?: boolean;
 }
 
@@ -153,7 +161,7 @@ export class MCPServer {
       port,
       host,
       auth: this.config.auth,
-      silent: options.silent,
+      silent: options.silent ?? process.env.MCPFY_SILENT === "1",
     });
 
     return {
