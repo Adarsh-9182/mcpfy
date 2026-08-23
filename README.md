@@ -1,13 +1,6 @@
 <div align="center">
 
-<pre>
- ███╗   ███╗ ██████╗██████╗ ███████╗██╗   ██╗
- ████╗ ████║██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝
- ██╔████╔██║██║     ██████╔╝█████╗   ╚████╔╝
- ██║╚██╔╝██║██║     ██╔═══╝ ██╔══╝    ╚██╔╝
- ██║ ╚═╝ ██║╚██████╗██║     ██║        ██║
- ╚═╝     ╚═╝ ╚═════╝╚═╝     ╚═╝        ╚═╝
-</pre>
+<img src="./assets/mcpfy-sdk.png" alt="mcpfy" width="100%" />
 
 
 ⚡ Deploy in minutes | 🔐 OAuth built in | ☁️ Remote MCP ready | 🤖 Works with Claude, OpenAI & any other client
